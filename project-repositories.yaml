@@ -1,7 +1,19 @@
 # Project map for cross-repo work. See AGENTS.md for schema guidance.
 version: 1
 
-# Starter form: add repository entries under repositories: (block list).
-# Git-critical fields (name, git.clone_url, git.default_branch) must follow the
-# constrained layout documented in AGENTS.md.
-repositories: []
+repositories:
+  - name: propio-agent
+    description: Proprio agent implementation
+    git:
+      clone_url: https://github.com/esack7/propio-agent.git
+      default_branch: main
+    context:
+      - README.md
+
+  - name: propio-providers
+    description: Proprio providers and integrations
+    git:
+      clone_url: https://github.com/esack7/propio-providers.git
+      default_branch: main
+    context:
+      - README.md
