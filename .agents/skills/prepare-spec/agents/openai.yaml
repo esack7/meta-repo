@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prepare Spec"
+  short_description: "Prepare isolated feature worktrees for a spec"
+  default_prompt: "Use $prepare-spec to create the feature worktrees for this specification."

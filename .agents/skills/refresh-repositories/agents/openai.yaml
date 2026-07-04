@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refresh Repositories"
+  short_description: "Safely refresh project reference repositories"
+  default_prompt: "Use $refresh-repositories to fast-forward the reference repositories."

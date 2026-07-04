@@ -1,0 +1,4 @@
+interface:
+  display_name: "Setup Repositories"
+  short_description: "Clone missing project reference repositories"
+  default_prompt: "Use $setup-repositories to clone the missing reference repositories."

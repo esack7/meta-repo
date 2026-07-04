@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Spec"
+  short_description: "Create a cross-repository feature specification"
+  default_prompt: "Use $create-spec to create a feature specification from my requirements."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Close Spec"
+  short_description: "Safely close feature specification worktrees"
+  default_prompt: "Use $close-spec to remove the feature worktrees while retaining branches and spec documents."
