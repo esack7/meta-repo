@@ -43,6 +43,6 @@ When validating in a fresh environment:
 4. Run `$setup-repositories` with the empty project map.
 5. Open the meta-repo in Propio, run `/skills`, and confirm the same five skills appear via `.propio/skills` symlinks.
 6. Run `/skill setup-repositories` with the empty project map.
-7. If Codex does not load symlinks, replace them with thin-wrapper skill directories per `docs/PLAN.md`.
+7. If any agent does not load symlinks, replace them with thin-wrapper skill directories per `docs/PLAN.md`.
 
 If any harness above is unavailable, treat that discovery path as unverified rather than equivalent to passing `tests/run-tests.sh`.
