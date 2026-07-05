@@ -24,7 +24,7 @@ Create a reusable `meta-repo` following [The Meta Repo: The AI Map of Your Codeb
   - `create-spec` gathers requirements, uses the project map to propose affected repositories, obtains user confirmation of the exact selection, and creates `requirements.md`, `design.md`, `tasks.md`, and a machine-readable `repos.txt` under `specs/<feature>/`. Spec names must match `^[a-z0-9][a-z0-9-]*$`. `repos.txt` is the sole input for later worktree operations. Readers trim surrounding whitespace, ignore blank lines and lines whose first non-whitespace character is `#`, and reject duplicate or unknown repository names.
   - `prepare-spec` validates every `repos.txt` entry against the project map and requires a corresponding clone under `repos/<name>/`. A missing clone causes a clear refusal directing the user to `setup-repositories`. It then fetches and prunes each selected repository's `origin`, verifies the configured `git.default_branch` exists remotely, and creates `feature/<spec-name>` worktrees under `specs/<feature>/repos/` from the latest `origin/<default-branch>`. An already-correct worktree is skipped; any other pre-existing local or remote feature branch causes a safe refusal unless the user explicitly authorizes reuse.
   - `close-spec` performs a two-phase safety check across all listed repositories before removing anything. It fetches and prunes every selected repository's `origin` so reachability checks use current remote refs; if any fetch fails, it defaults to refusing the entire close operation and removes nothing. An explicitly acknowledged offline-close path may proceed using last-known remote refs, but still requires every worktree to be clean, reports that remote reachability is stale, removes no branches, and retains all commits. After successful preflight, it removes worktrees and prunes worktree metadata, but never deletes local or remote branches and never deletes specification documents.
-- Keep canonical skill contents under `.claude/skills/<skill-name>/` so Claude Code exposes the five workflows through `/skill-name`. Add corresponding `.agents/skills/<skill-name>` symlinks so Codex can discover the same skills without duplicated definitions. Live discovery tests are authoritative: if Codex does not load the symlinks, replace them with real compatibility skill directories containing thin `SKILL.md` wrappers that point to the canonical Claude skill and its resources; do not duplicate full workflow bodies.
+- Keep canonical skill contents under `.claude/skills/<skill-name>/` so Claude Code exposes the five workflows through `/skill-name`. Add corresponding `.agents/skills/<skill-name>` and `.propio/skills/<skill-name>` symlinks so Codex and Propio can discover the same skills without duplicated definitions. Live discovery tests are authoritative: if an agent does not load the symlinks, replace them with real compatibility skill directories containing thin `SKILL.md` wrappers that point to the canonical Claude skill and its resources; do not duplicate full workflow bodies.
 - Keep safety-relevant Git and filesystem mutations in tested helpers bundled inside their owning skills; agents may select inputs and explain outcomes but must not reproduce or bypass helper logic. Do not expose root-level workflow scripts.
 - Make the root `AGENTS.md` use `project-repositories.yaml` as its repository index and direct agents doing cross-repo work to load the selected clone context files in their configured order.
 - Document that reference-clone working trees, not their Git metadata, remain untouched during feature work. Direct users to run `refresh-repositories` before cross-repo planning when current context matters.
@@ -38,12 +38,15 @@ Create a reusable `meta-repo` following [The Meta Repo: The AI Map of Your Codeb
 ```text
 Codex:       $setup-repositories
 Claude Code: /setup-repositories
+Propio:      /skill setup-repositories
 
 Codex:       $refresh-repositories
 Claude Code: /refresh-repositories
+Propio:      /skill refresh-repositories
 
 Codex:       $create-spec <feature description>
 Claude Code: /create-spec <feature description>
+Propio:      /skill create-spec <feature description>
 ```
 
 The same tool-specific prefix applies to `prepare-spec <spec-name>` and `close-spec <spec-name>`. Natural-language requests such as "set up the project repositories," "refresh the reference clones," or "create a spec for tags" may also trigger the skills. No separate custom slash-command files are added.
@@ -64,14 +67,14 @@ The same tool-specific prefix applies to `prepare-spec <spec-name>` and `close-s
 - Verify normal close refuses on fetch failure, explicitly acknowledged offline close uses last-known refs while preserving branches, and both paths retain clean-worktree and atomic-preflight guarantees.
 - Verify an existing closed spec can be reopened only through explicit branch reuse and that safe manual cleanup guidance does not delete unmerged or unpushed branches.
 - Verify natural-language and explicit invocations select the intended skill and produce the expected specification files.
-- Start fresh Codex and Claude Code sessions from the meta-repo, confirm all five skills appear in each tool's selector, and run non-destructive discovery smoke tests through the native invocation syntax. If Codex symlink discovery fails, install the thin-wrapper fallback and repeat the test. If either harness is unavailable, report that discovery path as unverified rather than treating static file validation as equivalent.
+- Start fresh Codex, Claude Code, and Propio sessions from the meta-repo, confirm all five skills appear in each tool's selector, and run non-destructive discovery smoke tests through the native invocation syntax. If symlink discovery fails, install the thin-wrapper fallback and repeat the test. If a harness is unavailable, report that discovery path as unverified rather than treating static file validation as equivalent.
 - Confirm `/repos/` and `/specs/*/repos/` stay absent from Git status while specification Markdown and `repos.txt` remain trackable.
 
 ## Assumptions
 
 - This is a generic scaffold; no real repository URLs are included yet.
 - No root `setup.sh`, `yq`, or external YAML parser dependency is required. Bundled helpers parse only the documented constrained layout for Git-critical fields and reject unsupported representations. Helpers target macOS/Linux using POSIX `sh` and avoid Bash 4-only features.
-- Project-local skills are the canonical workflow interface; Codex and Claude use their native invocation syntax over the same skill definitions.
+- Project-local skills are the canonical workflow interface; Codex, Claude Code, and Propio use their native invocation syntax over the same skill definitions.
 - Each skill includes `SKILL.md` and agent UI metadata, and keeps reusable templates or deterministic helpers bundled with the skill.
 - Feature work never modifies reference-clone working trees; fetches, worktree metadata, and explicitly requested fast-forward refreshes may update their Git metadata or checked-out default branch.
 - `setup-repositories` requires network access only when cloning a missing repository.

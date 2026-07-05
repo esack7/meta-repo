@@ -10,7 +10,7 @@ Remove feature worktrees for `specs/<spec-name>/` after a two-phase safety prefl
 ## When to use
 
 - "Close the `<spec-name>` spec"
-- `/close-spec <spec-name>` or `$close-spec <spec-name>`
+- `/close-spec <spec-name>` (Claude Code), `$close-spec <spec-name>` (Codex), or `/skill close-spec <spec-name>` (Propio)
 
 ## Rules
 

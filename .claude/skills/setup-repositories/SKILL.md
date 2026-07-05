@@ -10,7 +10,7 @@ Clone missing reference repositories under `repos/<name>/` using Git coordinates
 ## When to use
 
 - "Set up the project repositories"
-- `/setup-repositories` (Claude Code) or `$setup-repositories` (Codex)
+- `/setup-repositories` (Claude Code), `$setup-repositories` (Codex), or `/skill setup-repositories` (Propio)
 - Before **prepare-spec** when reference clones are missing
 
 ## Rules

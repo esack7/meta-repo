@@ -10,7 +10,7 @@ Create isolated feature worktrees under `specs/<spec-name>/repos/` for every rep
 ## When to use
 
 - "Prepare the `<spec-name>` spec"
-- `/prepare-spec <spec-name>` or `$prepare-spec <spec-name>`
+- `/prepare-spec <spec-name>` (Claude Code), `$prepare-spec <spec-name>` (Codex), or `/skill prepare-spec <spec-name>` (Propio)
 - Reopening an existing spec with retained feature branches (requires explicit reuse authorization)
 
 ## Rules

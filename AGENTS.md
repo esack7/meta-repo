@@ -63,15 +63,15 @@ Rich descriptive fields (`description`, `context`, `key_directories`, `selection
 
 Invoke workflows through your agent's native skill syntax or natural language.
 
-| Workflow | Codex | Claude Code | Natural language examples |
-|----------|-------|-------------|---------------------------|
-| Clone missing reference repos | `$setup-repositories` | `/setup-repositories` | "set up the project repositories" |
-| Fast-forward reference clones | `$refresh-repositories` | `/refresh-repositories` | "refresh the reference clones" |
-| Start a feature spec | `$create-spec <description>` | `/create-spec <description>` | "create a spec for tags" |
-| Create feature worktrees | `$prepare-spec <spec-name>` | `/prepare-spec <spec-name>` | "prepare the tags spec" |
-| Remove feature worktrees | `$close-spec <spec-name>` | `/close-spec <spec-name>` | "close the tags spec" |
+| Workflow | Codex | Claude Code | Propio | Natural language examples |
+|----------|-------|-------------|--------|---------------------------|
+| Clone missing reference repos | `$setup-repositories` | `/setup-repositories` | `/skill setup-repositories` | "set up the project repositories" |
+| Fast-forward reference clones | `$refresh-repositories` | `/refresh-repositories` | `/skill refresh-repositories` | "refresh the reference clones" |
+| Start a feature spec | `$create-spec <description>` | `/create-spec <description>` | `/skill create-spec <description>` | "create a spec for tags" |
+| Create feature worktrees | `$prepare-spec <spec-name>` | `/prepare-spec <spec-name>` | `/skill prepare-spec <spec-name>` | "prepare the tags spec" |
+| Remove feature worktrees | `$close-spec <spec-name>` | `/close-spec <spec-name>` | `/skill close-spec <spec-name>` | "close the tags spec" |
 
-Skills live under `.claude/skills/<skill-name>/`. Codex discovers them via `.agents/skills/<skill-name>` symlinks to the same definitions.
+Skills live under `.claude/skills/<skill-name>/`. Codex and Propio discover the same definitions through `.agents/skills/<skill-name>` and `.propio/skills/<skill-name>` symlinks.
 
 **Safety rule:** Git and filesystem mutations run only through bundled skill helpers. Agents select inputs and explain results; they do not reproduce or bypass helper logic.
 

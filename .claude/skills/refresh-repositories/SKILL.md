@@ -11,7 +11,7 @@ Fast-forward reference clones in `repos/` on their configured default branch.
 
 - "Refresh the reference clones"
 - Before cross-repo planning when current default-branch context matters
-- `/refresh-repositories` or `$refresh-repositories`
+- `/refresh-repositories` (Claude Code), `$refresh-repositories` (Codex), or `/skill refresh-repositories` (Propio)
 
 ## Rules
 

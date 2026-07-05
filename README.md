@@ -12,7 +12,7 @@ The approach is inspired by [The Meta Repo: The AI Map of Your Codebase](https:/
 - Ignored reference clones under `repos/` for browsing and cross-repository planning
 - Tracked requirements, designs, and task lists under `specs/`
 - Isolated feature worktrees for each active specification
-- Project-local workflows for Codex and Claude Code
+- Project-local workflows for Codex, Claude Code, and Propio
 - Guardrails around cloning, refreshing, creating worktrees, and closing completed work
 
 Your source repositories remain independent. The meta-repo tracks the map and the plans; it does not track cloned source code.
@@ -21,7 +21,7 @@ Your source repositories remain independent. The meta-repo tracks the map and th
 
 - Git 2.5 or newer
 - macOS or Linux with a POSIX-compatible shell
-- [Codex](https://openai.com/codex/) or Claude Code for the agent-driven workflows
+- [Codex](https://openai.com/codex/), Claude Code, or Propio for the agent-driven workflows
 - Access to every Git remote you add to the project map
 
 The bundled helpers do not require `yq` or another YAML parser.
@@ -88,6 +88,7 @@ Open the meta-repo root in your coding agent and ask it to set up the project re
 ```text
 Codex:       $setup-repositories
 Claude Code: /setup-repositories
+Propio:      /skill setup-repositories
 Natural language: "Set up the project repositories."
 ```
 
@@ -108,6 +109,7 @@ The normal lifecycle is:
 ```text
 Codex:       $create-spec add organization-wide tags
 Claude Code: /create-spec add organization-wide tags
+Propio:      /skill create-spec add organization-wide tags
 Natural language: "Create a spec for organization-wide tags."
 ```
 
@@ -128,6 +130,7 @@ These files are tracked. `repos.txt` is the authoritative list of repositories i
 ```text
 Codex:       $prepare-spec organization-wide-tags
 Claude Code: /prepare-spec organization-wide-tags
+Propio:      /skill prepare-spec organization-wide-tags
 ```
 
 For every repository in `repos.txt`, this creates a `feature/organization-wide-tags` branch from the configured remote default branch and checks it out beneath:
@@ -151,6 +154,7 @@ After the work is safely committed:
 ```text
 Codex:       $close-spec organization-wide-tags
 Claude Code: /close-spec organization-wide-tags
+Propio:      /skill close-spec organization-wide-tags
 ```
 
 The close workflow checks every selected worktree before removing any of them. It removes worktrees and prunes their metadata, but it does not delete feature branches or specification documents.
@@ -162,6 +166,7 @@ Reference clones are intentionally stable: setup does not pull repositories that
 ```text
 Codex:       $refresh-repositories
 Claude Code: /refresh-repositories
+Propio:      /skill refresh-repositories
 Natural language: "Refresh the reference clones."
 ```
 
@@ -183,7 +188,8 @@ Refresh only fast-forwards clean clones on their configured default branch. It r
 │       ├── repos.txt            # Tracked repository selection
 │       └── repos/               # Ignored feature worktrees
 ├── .claude/skills/              # Canonical workflow definitions and helpers
-└── .agents/skills/              # Codex links to the same workflows
+├── .agents/skills/              # Codex links to the same workflows
+└── .propio/skills/              # Propio links to the same workflows
 ```
 
 ## Safety model

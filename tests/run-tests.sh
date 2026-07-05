@@ -100,6 +100,16 @@ for skill in setup-repositories refresh-repositories create-spec prepare-spec cl
 	fi
 done
 
+# Propio symlinks
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec; do
+	link="$ROOT/.propio/skills/$skill"
+	if [ -L "$link" ] && [ -f "$link/SKILL.md" ]; then
+		pass "propio symlink: $skill"
+	else
+		fail "propio symlink: $skill"
+	fi
+done
+
 # Branch refs with slash are valid when Git accepts them.
 if . "$COMMON" && validate_branch_ref "release/1" "test branch"; then
 	pass 'validate_branch_ref accepts release/1'
@@ -709,6 +719,11 @@ if command -v codex >/dev/null 2>&1; then
 	printf 'NOTE: Codex native skill discovery smoke tests not run in CI (see docs/VERIFICATION.md)\n'
 else
 	printf 'NOTE: Codex CLI unavailable; native discovery unverified\n'
+fi
+if command -v propio >/dev/null 2>&1; then
+	printf 'NOTE: Propio native skill discovery smoke tests not run in CI (see docs/VERIFICATION.md)\n'
+else
+	printf 'NOTE: Propio CLI unavailable; native discovery unverified\n'
 fi
 
 printf '\nTests complete: %s passed, %s failed\n' "$PASS" "$FAIL"

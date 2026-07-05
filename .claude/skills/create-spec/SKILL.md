@@ -10,7 +10,7 @@ Create `specs/<spec-name>/` with tracked specification documents and a confirmed
 ## When to use
 
 - "Create a spec for …"
-- `/create-spec <feature description>` or `$create-spec <feature description>`
+- `/create-spec <feature description>` (Claude Code), `$create-spec <feature description>` (Codex), or `/skill create-spec <feature description>` (Propio)
 
 ## Spec naming
 
