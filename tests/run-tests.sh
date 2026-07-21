@@ -779,11 +779,14 @@ assert_fail 'parse rejects duplicate repos' "$PARSE" "$WORKDIR/dup-repos.txt"
 if grep -qF '/repos/' "$ROOT/.gitignore" && grep -qF '/specs/*/repos/' "$ROOT/.gitignore" && \
 	git -C "$ROOT" check-ignore -q --no-index repos/example && \
 	git -C "$ROOT" check-ignore -q --no-index specs/example/repos/repository && \
+	git -C "$ROOT" check-ignore -q --no-index specs/.create-spec-tmp-ABC123 && \
+	git -C "$ROOT" check-ignore -q --no-index specs/example/.prepare-spec-plan-ABC123 && \
+	git -C "$ROOT" check-ignore -q --no-index specs/example/.repos-txt-ABC123 && \
 	! git -C "$ROOT" check-ignore -q --no-index specs/example/requirements.md && \
 	! git -C "$ROOT" check-ignore -q --no-index specs/example/repos.txt; then
-	pass 'gitignore ignores clones and worktrees but not spec documents'
+	pass 'gitignore ignores clones, worktrees, and helper temp paths but not spec documents'
 else
-	fail 'gitignore ignores clones and worktrees but not spec documents'
+	fail 'gitignore ignores clones, worktrees, and helper temp paths but not spec documents'
 fi
 
 # Live validation harness availability (reported; not equivalent to passing tests above)

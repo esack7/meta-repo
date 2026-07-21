@@ -143,7 +143,7 @@ specs/organization-wide-tags/repos/<repository-name>/
 
 Implementation happens in these feature worktrees—not in the reference clones under `repos/`.
 
-Rerunning preparation safely skips an already-correct worktree, including one with in-progress changes. Existing files are never cleaned, reset, or overwritten.
+Rerunning preparation safely skips a registered worktree already on the expected feature branch, including one with in-progress changes. A worktree on a different branch is refused rather than skipped. Existing files are never cleaned, reset, or overwritten.
 
 ### 3. Implement and review
 

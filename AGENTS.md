@@ -93,7 +93,7 @@ Gathers requirements, proposes affected repositories from the project map, obtai
 
 ### prepare-spec
 
-Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches and prunes `origin`, and verifies every `origin/<default_branch>` before creating anything. It then creates `feature/<spec-name>` worktrees under `specs/<spec-name>/repos/`, rolling back newly created clean worktrees and unchanged branches if a later creation fails. It skips an already-correct worktree without requiring it to be clean and refuses pre-existing feature branches unless you explicitly authorize reuse.
+Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches and prunes `origin`, and verifies every `origin/<default_branch>` before creating anything. It then creates `feature/<spec-name>` worktrees under `specs/<spec-name>/repos/`, rolling back newly created clean worktrees and unchanged branches if a later creation fails. It skips an already-correct worktree on the expected feature branch without requiring it to be clean. A worktree on another branch is refused, as are pre-existing feature branches unless you explicitly authorize reuse.
 
 ### close-spec
 
