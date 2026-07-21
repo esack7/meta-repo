@@ -23,7 +23,7 @@ meta_root_from_map() {
 	printf '%s\n' "$dir"
 }
 
-# Require Git 2.5+.
+# Require Git 2.17+ (the first supported version with `git worktree remove`).
 require_git_version() {
 	if ! command -v git >/dev/null 2>&1; then
 		die "git is required but not found in PATH"
@@ -31,8 +31,8 @@ require_git_version() {
 	major=$(git --version | sed -n 's/^git version \([0-9]*\)\..*/\1/p')
 	minor=$(git --version | sed -n 's/^git version [0-9]*\.\([0-9]*\).*/\1/p')
 	[ -n "$major" ] && [ -n "$minor" ] || die "unable to parse git version"
-	if [ "$major" -lt 2 ] || { [ "$major" -eq 2 ] && [ "$minor" -lt 5 ]; }; then
-		die "git 2.5 or newer is required (found $(git --version))"
+	if [ "$major" -lt 2 ] || { [ "$major" -eq 2 ] && [ "$minor" -lt 17 ]; }; then
+		die "git 2.17 or newer is required (found $(git --version))"
 	fi
 }
 

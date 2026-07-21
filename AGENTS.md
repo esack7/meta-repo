@@ -71,7 +71,7 @@ Invoke workflows through your agent's native skill syntax or natural language.
 | Create feature worktrees | `$prepare-spec <spec-name>` | `/prepare-spec <spec-name>` | `/skill prepare-spec <spec-name>` | "prepare the tags spec" |
 | Remove feature worktrees | `$close-spec <spec-name>` | `/close-spec <spec-name>` | `/skill close-spec <spec-name>` | "close the tags spec" |
 
-Skills live under `.claude/skills/<skill-name>/`. Codex and Propio discover the same definitions through `.agents/skills/<skill-name>` and `.propio/skills/<skill-name>` symlinks.
+Canonical skills live under `.claude/skills/<skill-name>/`. Codex discovers thin compatibility wrappers under `.agents/skills/<skill-name>/`; those wrappers point back to the canonical skill and contain no helper copies. Propio discovers the canonical definitions through `.propio/skills/<skill-name>` symlinks.
 
 **Safety rule:** Git and filesystem mutations run only through bundled skill helpers. Agents select inputs and explain results; they do not reproduce or bypass helper logic.
 
@@ -89,10 +89,11 @@ Gathers requirements, proposes affected repositories from the project map, obtai
 
 - Spec names must match `^[a-z0-9][a-z0-9-]*$` and must not collide with an existing spec directory.
 - `repos.txt` lists one repository `name` per line; it is the sole input for later worktree operations.
+- Before preparation, an explicitly confirmed correction may atomically replace `repos.txt` through the helper's `--amend` mode. Amendment is refused after any feature branch, worktree, or worktree registration exists so historical repository selection remains durable.
 
 ### prepare-spec
 
-Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches and prunes `origin`, verifies `origin/<default_branch>` exists, and creates `feature/<spec-name>` worktrees under `specs/<spec-name>/repos/`. Skips an already-correct worktree. Refuses pre-existing feature branches unless you explicitly authorize reuse.
+Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches and prunes `origin`, and verifies every `origin/<default_branch>` before creating anything. It then creates `feature/<spec-name>` worktrees under `specs/<spec-name>/repos/`, rolling back newly created clean worktrees and unchanged branches if a later creation fails. It skips an already-correct worktree without requiring it to be clean and refuses pre-existing feature branches unless you explicitly authorize reuse.
 
 ### close-spec
 

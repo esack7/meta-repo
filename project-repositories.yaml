@@ -3,17 +3,43 @@ version: 1
 
 repositories:
   - name: propio-agent
-    description: Proprio agent implementation
+    description: TypeScript CLI agent, agent loop, built-in tools, MCP integration, sessions, and terminal UX
     git:
       clone_url: https://github.com/esack7/propio-agent.git
       default_branch: main
     context:
+      - AGENTS.md
       - README.md
+    key_directories:
+      - path: src
+        description: Agent orchestration, configuration, sessions, MCP, skills, and CLI entrypoints
+      - path: src/tools
+        description: Built-in tool implementations and tool registry
+      - path: src/ui
+        description: Terminal rendering and interactive user experience
+      - path: src/config
+        description: Propio-specific configuration loading and paths
+    selection:
+      use_for: CLI behavior, the agent loop, tools, MCP and skill support, sessions, prompts, terminal UX, configuration paths, and sandbox integration
+      avoid_for: Provider API adapters, provider-specific streaming behavior, shared provider contracts, and reusable provider configuration validation
 
   - name: propio-providers
-    description: Proprio providers and integrations
+    description: ESM TypeScript package of LLM provider adapters and shared streaming, configuration, retry, and diagnostic contracts
     git:
       clone_url: https://github.com/esack7/propio-providers.git
       default_branch: main
     context:
+      - AGENTS.md
       - README.md
+    key_directories:
+      - path: src/providers
+        description: Concrete Anthropic, Bedrock, Ollama, OpenRouter, OpenAI, Gemini, xAI, and Cloudflare adapters
+      - path: src/internal
+        description: Shared streaming, retry, capability, and provider infrastructure
+      - path: src/__tests__
+        description: Jest unit and live-provider integration coverage
+      - path: src
+        description: Public contracts, factory, diagnostics, and provider configuration APIs
+    selection:
+      use_for: Provider adapters, provider-specific API behavior, shared streaming events, capabilities, retries, diagnostics, and reusable provider configuration
+      avoid_for: CLI agent orchestration, built-in tools, MCP integration, sessions, terminal UX, and Docker sandbox behavior

@@ -19,7 +19,7 @@ Your source repositories remain independent. The meta-repo tracks the map and th
 
 ## Prerequisites
 
-- Git 2.5 or newer
+- Git 2.17 or newer
 - macOS or Linux with a POSIX-compatible shell
 - [Codex](https://openai.com/codex/), Claude Code, or Propio for the agent-driven workflows
 - Access to every Git remote you add to the project map
@@ -34,7 +34,7 @@ Copy this scaffold into a new directory, or publish it as a Git hosting template
 
 ### 2. Describe your repositories
 
-Replace the empty `repositories: []` entry in `project-repositories.yaml` with one block for each repository in your project:
+Add one block to `project-repositories.yaml` for each repository in your project. A new copy of the scaffold starts with `repositories: []`:
 
 ```yaml
 version: 1
@@ -125,6 +125,8 @@ specs/organization-wide-tags/
 
 These files are tracked. `repos.txt` is the authoritative list of repositories involved in the feature.
 
+If the confirmed repository selection needs correction before preparation, rerun `create-spec` through the agent and provide the complete replacement list. The guarded amendment path updates `repos.txt` atomically and refuses changes after feature branches or worktrees exist.
+
 ### 2. Prepare isolated worktrees
 
 ```text
@@ -133,13 +135,15 @@ Claude Code: /prepare-spec organization-wide-tags
 Propio:      /skill prepare-spec organization-wide-tags
 ```
 
-For every repository in `repos.txt`, this creates a `feature/organization-wide-tags` branch from the configured remote default branch and checks it out beneath:
+The helper fetches and validates every repository before making the first branch or worktree. It then creates a `feature/organization-wide-tags` branch from each configured remote default branch and checks it out beneath:
 
 ```text
 specs/organization-wide-tags/repos/<repository-name>/
 ```
 
 Implementation happens in these feature worktrees—not in the reference clones under `repos/`.
+
+Rerunning preparation safely skips an already-correct worktree, including one with in-progress changes. Existing files are never cleaned, reset, or overwritten.
 
 ### 3. Implement and review
 
@@ -188,7 +192,7 @@ Refresh only fast-forwards clean clones on their configured default branch. It r
 │       ├── repos.txt            # Tracked repository selection
 │       └── repos/               # Ignored feature worktrees
 ├── .claude/skills/              # Canonical workflow definitions and helpers
-├── .agents/skills/              # Codex links to the same workflows
+├── .agents/skills/              # Thin Codex discovery wrappers for canonical workflows
 └── .propio/skills/              # Propio links to the same workflows
 ```
 

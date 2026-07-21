@@ -90,13 +90,17 @@ for skill in setup-repositories refresh-repositories create-spec prepare-spec cl
 	fi
 done
 
-# Codex symlinks
+# Codex compatibility wrappers (real directories are used because Codex discovery
+# does not reliably follow project-local skill symlinks).
 for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec; do
-	link="$ROOT/.agents/skills/$skill"
-	if [ -L "$link" ] && [ -f "$link/SKILL.md" ]; then
-		pass "codex symlink: $skill"
+	wrapper="$ROOT/.agents/skills/$skill"
+	canonical="../../../.claude/skills/$skill/SKILL.md"
+	if [ -d "$wrapper" ] && [ ! -L "$wrapper" ] && [ -f "$wrapper/SKILL.md" ] && \
+		grep -Fq "($canonical)" "$wrapper/SKILL.md" && \
+		[ -z "$(find "$wrapper/scripts" "$wrapper/templates" -type f 2>/dev/null)" ]; then
+		pass "codex wrapper: $skill"
 	else
-		fail "codex symlink: $skill"
+		fail "codex wrapper: $skill"
 	fi
 done
 
@@ -110,15 +114,24 @@ for skill in setup-repositories refresh-repositories create-spec prepare-spec cl
 	fi
 done
 
-# Branch refs with slash are valid when Git accepts them.
+# Git minimum and branch-ref validation.
+WORKDIR=$(mktemp -d)
+trap 'rm -rf "$WORKDIR"' EXIT INT HUP TERM
+FAKE_GIT_DIR="$WORKDIR/fake-git"
+mkdir -p "$FAKE_GIT_DIR"
+printf '%s\n' '#!/bin/sh' 'printf "%s\n" "git version 2.5.6"' > "$FAKE_GIT_DIR/git"
+chmod +x "$FAKE_GIT_DIR/git"
+if (PATH="$FAKE_GIT_DIR:$PATH"; . "$COMMON"; require_git_version) >/dev/null 2>&1; then
+	fail 'require_git_version rejects Git 2.5'
+else
+	pass 'require_git_version rejects Git 2.5'
+fi
+
 if . "$COMMON" && validate_branch_ref "release/1" "test branch"; then
 	pass 'validate_branch_ref accepts release/1'
 else
 	fail 'validate_branch_ref accepts release/1'
 fi
-
-WORKDIR=$(mktemp -d)
-trap 'rm -rf "$WORKDIR"' EXIT INT HUP TERM
 
 ORIGIN_A="$WORKDIR/origin-a.git"
 ORIGIN_B="$WORKDIR/origin-b.git"
@@ -517,6 +530,62 @@ SPEC_DIR="$META/specs/$SPEC"
 	pass 'create-spec helper writes all spec files' || fail 'create-spec helper writes all spec files'
 assert_fail 'create-spec rejects existing spec name' "$META_CREATE" "$MAP" "$SPEC" repo-a
 
+SPEC_AMEND=feature-amend
+"$META_CREATE" "$MAP" "$SPEC_AMEND" --summary "Amend test" repo-a >/dev/null 2>&1
+if "$META_CREATE" "$MAP" "$SPEC_AMEND" --amend repo-b >/dev/null 2>&1 && \
+	[ "$(sed -n '1p' "$META/specs/$SPEC_AMEND/repos.txt")" = "repo-b" ] && \
+	[ "$(wc -l < "$META/specs/$SPEC_AMEND/repos.txt" | tr -d ' ')" = "1" ]; then
+	pass 'create-spec atomically amends repository selection before prepare'
+else
+	fail 'create-spec atomically amends repository selection before prepare'
+fi
+assert_fail 'create-spec amend rejects unknown repository' \
+	"$META_CREATE" "$MAP" "$SPEC_AMEND" --amend unknown-repo
+if [ "$(sed -n '1p' "$META/specs/$SPEC_AMEND/repos.txt")" = "repo-b" ]; then
+	pass 'failed create-spec amend preserves repository selection'
+else
+	fail 'failed create-spec amend preserves repository selection'
+fi
+
+# Preflight every selected repository before creating the first worktree.
+SPEC_PREFLIGHT=feature-preflight
+"$META_CREATE" "$MAP" "$SPEC_PREFLIGHT" --summary "Preflight test" repo-a repo-b >/dev/null 2>&1
+git -C "$META/repos/repo-b" remote set-url origin "$WORKDIR/wrong.git"
+assert_fail 'prepare-spec preflights all repositories before mutation' \
+	"$META_PREPARE" "$MAP" "$SPEC_PREFLIGHT"
+git -C "$META/repos/repo-b" remote set-url origin "$ORIGIN_B"
+if [ ! -d "$META/specs/$SPEC_PREFLIGHT/repos/repo-a" ] && \
+	! git -C "$META/repos/repo-a" show-ref --verify --quiet "refs/heads/feature/$SPEC_PREFLIGHT"; then
+	pass 'prepare-spec preflight failure leaves earlier repositories unprepared'
+else
+	fail 'prepare-spec preflight failure leaves earlier repositories unprepared'
+fi
+
+# If application fails after an earlier repository was prepared, roll back clean
+# worktrees and branches while retaining a worktree that unexpectedly became dirty.
+SPEC_ROLLBACK=feature-rollback
+"$META_CREATE" "$MAP" "$SPEC_ROLLBACK" --summary "Rollback test" repo-a repo-b >/dev/null 2>&1
+ROLLBACK_HOOK="$META/repos/repo-b/.git/hooks/post-checkout"
+printf '%s\n' '#!/bin/sh' ': > hook-dirty.txt' > "$ROLLBACK_HOOK"
+chmod +x "$ROLLBACK_HOOK"
+assert_fail 'prepare-spec reports an apply-phase dirty-worktree failure' \
+	"$META_PREPARE" "$MAP" "$SPEC_ROLLBACK"
+rm -f "$ROLLBACK_HOOK"
+if [ ! -d "$META/specs/$SPEC_ROLLBACK/repos/repo-a" ] && \
+	! git -C "$META/repos/repo-a" show-ref --verify --quiet "refs/heads/feature/$SPEC_ROLLBACK"; then
+	pass 'prepare-spec rolls back earlier clean worktrees and branches'
+else
+	fail 'prepare-spec rolls back earlier clean worktrees and branches'
+fi
+if [ -f "$META/specs/$SPEC_ROLLBACK/repos/repo-b/hook-dirty.txt" ]; then
+	pass 'prepare-spec rollback retains an unexpectedly dirty worktree'
+else
+	fail 'prepare-spec rollback retains an unexpectedly dirty worktree'
+fi
+git -C "$META/repos/repo-b" worktree remove --force \
+	"$META/specs/$SPEC_ROLLBACK/repos/repo-b" >/dev/null 2>&1 || true
+git -C "$META/repos/repo-b" branch -D "feature/$SPEC_ROLLBACK" >/dev/null 2>&1 || true
+
 # Prepare worktrees
 if "$META_PREPARE" "$MAP" "$SPEC" >/dev/null 2>&1; then
 	pass 'prepare-spec creates worktrees'
@@ -546,6 +615,19 @@ if "$META_PREPARE" "$MAP" "$SPEC" >/dev/null 2>&1; then
 else
 	fail 'prepare-spec skips existing worktrees'
 fi
+
+printf 'in progress\n' > "$SPEC_DIR/repos/repo-a/untracked-work.txt"
+if "$META_PREPARE" "$MAP" "$SPEC" >/dev/null 2>&1 && \
+	[ -f "$SPEC_DIR/repos/repo-a/untracked-work.txt" ]; then
+	pass 'prepare-spec skips dirty worktrees without modifying them'
+else
+	fail 'prepare-spec skips dirty worktrees without modifying them'
+fi
+rm -f "$SPEC_DIR/repos/repo-a/untracked-work.txt"
+
+assert_fail 'create-spec amend refuses after feature branches exist' \
+	"$META_CREATE" "$MAP" "$SPEC" --amend repo-a
+assert_lines 'failed post-prepare amend preserves repos.txt' 2 sed -n '/^repo-/p' "$SPEC_DIR/repos.txt"
 
 wt_before_refresh=$(git -C "$SPEC_DIR/repos/repo-a" rev-parse HEAD)
 if "$META_REFRESH" "$MAP" >/dev/null 2>&1 && [ -d "$SPEC_DIR/repos/repo-a" ] && \
@@ -711,17 +793,17 @@ else
 	printf 'NOTE: skill-validator CLI unavailable; live skill validation unverified (see docs/VERIFICATION.md)\n'
 fi
 if command -v claude >/dev/null 2>&1; then
-	printf 'NOTE: Claude Code native skill discovery smoke tests not run in CI (see docs/VERIFICATION.md)\n'
+	printf 'NOTE: Claude Code native skill discovery smoke tests not run in the automated suite (see docs/VERIFICATION.md)\n'
 else
 	printf 'NOTE: Claude Code CLI unavailable; native discovery unverified\n'
 fi
 if command -v codex >/dev/null 2>&1; then
-	printf 'NOTE: Codex native skill discovery smoke tests not run in CI (see docs/VERIFICATION.md)\n'
+	printf 'NOTE: Codex native skill discovery smoke tests not run in the automated suite (see docs/VERIFICATION.md)\n'
 else
 	printf 'NOTE: Codex CLI unavailable; native discovery unverified\n'
 fi
 if command -v propio >/dev/null 2>&1; then
-	printf 'NOTE: Propio native skill discovery smoke tests not run in CI (see docs/VERIFICATION.md)\n'
+	printf 'NOTE: Propio native skill discovery smoke tests not run in the automated suite (see docs/VERIFICATION.md)\n'
 else
 	printf 'NOTE: Propio CLI unavailable; native discovery unverified\n'
 fi

@@ -34,7 +34,7 @@ Optionally pass specific repository `name` values after the map path.
 
 ## Helper behavior
 
-- Requires Git 2.5+.
+- Requires Git 2.17+.
 - Validates repository names and constrained project-map formatting.
 - Clones through a temporary directory under `repos/` on the same filesystem, verifies `origin` and default branch, then moves into place.
 - Leaves existing clones with matching `origin` unchanged.

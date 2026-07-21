@@ -3,32 +3,8 @@ name: refresh-repositories
 description: Fast-forward clean reference clones on their configured default branch. Use when the user asks to refresh reference clones, update repository context, or run refresh-repositories before cross-repo planning.
 ---
 
-# refresh-repositories
+# Codex compatibility entrypoint
 
-Fast-forward reference clones in `repos/` on their configured default branch.
+This directory is a discovery wrapper, not a second implementation.
 
-## When to use
-
-- "Refresh the reference clones"
-- Before cross-repo planning when current default-branch context matters
-- `/refresh-repositories` or `$refresh-repositories`
-
-## Rules
-
-- Invoke the bundled helper only; do not improvise fetch/merge commands.
-- Never touches feature worktrees under `specs/*/repos/`.
-- Refuses dirty, divergent, locally-ahead, or wrong-branch clones.
-
-## Steps
-
-1. Run:
-
-```sh
-sh .claude/skills/refresh-repositories/scripts/refresh-repositories.sh project-repositories.yaml
-```
-
-Optionally pass repository `name` values to limit scope.
-
-2. Summarize which repositories were updated, up to date, or refused.
-
-See [AGENTS.md](../../../AGENTS.md) for troubleshooting.
+Read and follow the canonical [refresh-repositories skill](../../../.claude/skills/refresh-repositories/SKILL.md) completely before acting. Resolve every helper and resource from that canonical skill directory; this wrapper intentionally contains no duplicated scripts.

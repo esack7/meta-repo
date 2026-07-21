@@ -29,7 +29,18 @@ sh .claude/skills/create-spec/scripts/create-spec.sh project-repositories.yaml <
   --summary "<one-line summary>" repo-a repo-b
 ```
 
-5. Edit the generated Markdown files with gathered requirements. Do not modify `repos.txt` after confirmation except through explicit user-directed correction reruns of the helper.
+5. Edit the generated Markdown files with gathered requirements. Do not hand-edit `repos.txt` after confirmation.
+
+## Correcting repository selection
+
+Before `prepare-spec` creates any feature branch or worktree, obtain confirmation of the complete replacement repository list and run:
+
+```sh
+sh .claude/skills/create-spec/scripts/create-spec.sh project-repositories.yaml <spec-name> \
+  --amend repo-a repo-b
+```
+
+The helper atomically replaces only `repos.txt`. It refuses amendments if feature worktrees, worktree registrations, or `feature/<spec-name>` branches already exist. In that state, use a new spec name so the old repository selection remains durable.
 
 ## repos.txt rules
 

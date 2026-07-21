@@ -37,7 +37,8 @@ Add `--reuse-branches` only after explicit user authorization to reuse retained 
 
 - Validates every `repos.txt` entry against the project map.
 - Requires `repos/<name>/` reference clones.
-- Fetches and prunes `origin`, verifies `origin/<default_branch>`, creates worktrees on `feature/<spec-name>`.
-- Skips an already-correct worktree; refuses other branch collisions without `--reuse-branches`.
+- Fetches and prunes every `origin` and verifies every `origin/<default_branch>` before creating the first worktree.
+- Rolls back clean worktrees and unchanged branches created by the current invocation if a later creation fails.
+- Skips an already-correct worktree even when it contains in-progress changes; refuses other branch collisions without `--reuse-branches`.
 
 See [AGENTS.md](../../../AGENTS.md) for branch and reopen guidance.
