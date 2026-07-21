@@ -1,6 +1,7 @@
 /repos/
 /specs/*/repos/
 .DS_Store
+/.playwright-mcp/
 /specs/.create-spec-tmp-*
 /specs/*/.prepare-spec-plan-*
 /specs/*/.repos-txt-*
