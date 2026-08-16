@@ -70,8 +70,9 @@ Invoke workflows through your agent's native skill syntax or natural language.
 | Start a feature spec | `$create-spec <description>` | `/create-spec <description>` | `/skill create-spec <description>` | "create a spec for tags" |
 | Create feature worktrees | `$prepare-spec <spec-name>` | `/prepare-spec <spec-name>` | `/skill prepare-spec <spec-name>` | "prepare the tags spec" |
 | Remove feature worktrees | `$close-spec <spec-name>` | `/close-spec <spec-name>` | `/skill close-spec <spec-name>` | "close the tags spec" |
+| Link local package checkouts | `$link-local-packages` | `/link-local-packages` | `/skill link-local-packages` | "link providers into the agent locally" |
 
-Canonical skills live under `.claude/skills/<skill-name>/`. Codex discovers thin compatibility wrappers under `.agents/skills/<skill-name>/`; those wrappers point back to the canonical skill and contain no helper copies. Propio discovers the canonical definitions through `.propio/skills/<skill-name>` symlinks.
+Canonical skills live under `.claude/skills/<skill-name>/`. Codex discovers thin compatibility wrappers under `.agents/skills/<skill-name>/`; those wrappers point back to the canonical skill and contain no helper copies. Propio discovers the canonical definitions through `.propio/skills/<skill-name>` symlinks. Cursor discovers `link-local-packages` through `.cursor/commands/<skill-name>.md` (as `/link-local-packages`) and `.cursor/rules/<skill-name>.mdc`; both are wrappers pointing back to the canonical skill.
 
 **Safety rule:** Git and filesystem mutations run only through bundled skill helpers. Agents select inputs and explain results; they do not reproduce or bypass helper logic.
 
@@ -98,6 +99,14 @@ Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches 
 ### close-spec
 
 Two-phase safety check across all listed repositories. On success, removes worktrees and prunes worktree metadata only—never deletes local or remote branches or specification documents.
+
+### link-local-packages
+
+Makes a change in one repository testable in the repositories that consume it without publishing a package version first. Reads each local `package.json`, discovers which local checkouts depend on which, and replaces the published copy inside a consumer's `node_modules` with a symlink to the local checkout.
+
+Writes only inside `node_modules/`; never edits `package.json`, a lockfile, or Git state. Supports `status`, `link`, and `unlink`, scoped to `repos/` by default or to `specs/<spec-name>/repos/` with `--spec`.
+
+Contexts must not be mixed: linking a feature worktree to a reference clone silently tests the wrong branch. Because `npm install` and `npm ci` remove links, re-run `link` after either.
 
 ## repos.txt format
 

@@ -149,6 +149,18 @@ Rerunning preparation safely skips a registered worktree already on the expected
 
 Ask your agent to work from the specification directory. Because the spec, selected repositories, and repository-specific context are all explicit, it can reason across the feature while keeping changes isolated in the correct worktrees.
 
+When one selected repository publishes a package that another consumes, link them so the change is testable immediately instead of after a release:
+
+```text
+Codex:       $link-local-packages
+Claude Code: /link-local-packages
+Propio:      /skill link-local-packages
+Cursor:      /link-local-packages
+Natural language: "Link the local packages for this spec."
+```
+
+Pass `--spec <spec-name>` to link the feature worktrees rather than the reference clones. Reference clones and worktrees are never linked to each other, because that would test the wrong branch.
+
 Commit and publish changes in each source repository using your normal Git and review process.
 
 ### 4. Close the specification
@@ -193,7 +205,10 @@ Refresh only fast-forwards clean clones on their configured default branch. It r
 │       └── repos/               # Ignored feature worktrees
 ├── .claude/skills/              # Canonical workflow definitions and helpers
 ├── .agents/skills/              # Thin Codex discovery wrappers for canonical workflows
-└── .propio/skills/              # Propio links to the same workflows
+├── .propio/skills/              # Propio links to the same workflows
+└── .cursor/                     # Cursor command and rule wrappers
+    ├── commands/                # Slash-command entrypoints
+    └── rules/                   # Agent-requested rule entrypoints
 ```
 
 ## Safety model

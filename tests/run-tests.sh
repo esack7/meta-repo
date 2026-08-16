@@ -10,6 +10,7 @@ REFRESH="$ROOT/.claude/skills/refresh-repositories/scripts/refresh-repositories.
 PREPARE="$ROOT/.claude/skills/prepare-spec/scripts/prepare-spec.sh"
 CLOSE="$ROOT/.claude/skills/close-spec/scripts/close-spec.sh"
 CREATE="$ROOT/.claude/skills/create-spec/scripts/create-spec.sh"
+LINK="$ROOT/.claude/skills/link-local-packages/scripts/link-local-packages.sh"
 COMMON="$ROOT/.claude/skills/_shared/lib/common.sh"
 
 PASS=0
@@ -64,7 +65,7 @@ write_map() {
 }
 
 # Syntax checks
-for script in "$EXTRACT" "$PARSE" "$SETUP" "$REFRESH" "$PREPARE" "$CLOSE" "$CREATE"; do
+for script in "$EXTRACT" "$PARSE" "$SETUP" "$REFRESH" "$PREPARE" "$CLOSE" "$CREATE" "$LINK"; do
 	if sh -n "$script" 2>/dev/null; then
 		pass "shell syntax: $(basename "$script")"
 	else
@@ -73,7 +74,7 @@ for script in "$EXTRACT" "$PARSE" "$SETUP" "$REFRESH" "$PREPARE" "$CLOSE" "$CREA
 done
 
 # Skill metadata checks
-for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec; do
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages; do
 	skill_file="$ROOT/.claude/skills/$skill/SKILL.md"
 	if [ -f "$skill_file" ] && grep -q '^name: '"$skill" "$skill_file" && grep -q '^description:' "$skill_file"; then
 		pass "skill metadata: $skill"
@@ -92,7 +93,7 @@ done
 
 # Codex compatibility wrappers (real directories are used because Codex discovery
 # does not reliably follow project-local skill symlinks).
-for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec; do
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages; do
 	wrapper="$ROOT/.agents/skills/$skill"
 	canonical="../../../.claude/skills/$skill/SKILL.md"
 	if [ -d "$wrapper" ] && [ ! -L "$wrapper" ] && [ -f "$wrapper/SKILL.md" ] && \
@@ -105,12 +106,30 @@ for skill in setup-repositories refresh-repositories create-spec prepare-spec cl
 done
 
 # Propio symlinks
-for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec; do
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages; do
 	link="$ROOT/.propio/skills/$skill"
 	if [ -L "$link" ] && [ -f "$link/SKILL.md" ]; then
 		pass "propio symlink: $skill"
 	else
 		fail "propio symlink: $skill"
+	fi
+done
+
+# Cursor wrappers (command and rule entrypoints that point back to the canonical skill).
+for skill in link-local-packages; do
+	cmd="$ROOT/.cursor/commands/$skill.md"
+	rule="$ROOT/.cursor/rules/$skill.mdc"
+	canonical="../../.claude/skills/$skill/SKILL.md"
+	if [ -f "$cmd" ] && grep -Fq "($canonical)" "$cmd"; then
+		pass "cursor command wrapper: $skill"
+	else
+		fail "cursor command wrapper: $skill"
+	fi
+	if [ -f "$rule" ] && grep -q '^description:' "$rule" && \
+		grep -q '^alwaysApply:' "$rule" && grep -Fq "($canonical)" "$rule"; then
+		pass "cursor rule wrapper: $skill"
+	else
+		fail "cursor rule wrapper: $skill"
 	fi
 done
 
@@ -787,6 +806,103 @@ if grep -qF '/repos/' "$ROOT/.gitignore" && grep -qF '/specs/*/repos/' "$ROOT/.g
 	pass 'gitignore ignores clones, worktrees, and helper temp paths but not spec documents'
 else
 	fail 'gitignore ignores clones, worktrees, and helper temp paths but not spec documents'
+fi
+
+# link-local-packages helper
+if command -v node >/dev/null 2>&1; then
+	LINK_META="$WORKDIR/link-meta"
+	LINK_MAP="$LINK_META/project-repositories.yaml"
+	mkdir -p "$LINK_META/.claude/skills"
+	cp -R "$ROOT/.claude/skills/." "$LINK_META/.claude/skills/"
+	META_LINK="$LINK_META/.claude/skills/link-local-packages/scripts/link-local-packages.sh"
+
+	write_map "$LINK_MAP" \
+		"version: 1" \
+		"repositories:" \
+		"  - name: pkg-dep" \
+		"    description: Dependency package" \
+		"    git:" \
+		"      clone_url: $ORIGIN_A" \
+		"      default_branch: main" \
+		"  - name: pkg-consumer" \
+		"    description: Consumer package" \
+		"    git:" \
+		"      clone_url: $ORIGIN_B" \
+		"      default_branch: main"
+
+	mkdir -p "$LINK_META/repos/pkg-dep/dist"
+	printf '%s\n' '{"name":"@test/dep","version":"1.0.0"}' > "$LINK_META/repos/pkg-dep/package.json"
+	mkdir -p "$LINK_META/repos/pkg-consumer/node_modules/@test/dep"
+	printf '%s\n' '{"name":"@test/consumer","version":"1.0.0","dependencies":{"@test/dep":"0.9.0"}}' \
+		> "$LINK_META/repos/pkg-consumer/package.json"
+	printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' \
+		> "$LINK_META/repos/pkg-consumer/node_modules/@test/dep/package.json"
+
+	DEP_LINK="$LINK_META/repos/pkg-consumer/node_modules/@test/dep"
+
+	# Status reports the published copy before any link exists.
+	if "$META_LINK" "$LINK_MAP" status 2>/dev/null | grep -q 'registry .*pkg-consumer -> @test/dep (0.9.0)'; then
+		pass 'link status reports installed registry version'
+	else
+		fail 'link status reports installed registry version'
+	fi
+
+	# Link replaces the published copy with a symlink to the local checkout.
+	# Helpers store canonical paths, so compare against the resolved directory.
+	DEP_REAL=$(cd "$LINK_META/repos/pkg-dep" && pwd -P)
+	"$META_LINK" "$LINK_MAP" link >/dev/null 2>&1
+	if [ -L "$DEP_LINK" ] && \
+		[ "$(readlink "$DEP_LINK")" = "$DEP_REAL" ] && \
+		grep -q '"version":"1.0.0"' "$DEP_LINK/package.json"; then
+		pass 'link replaces registry copy with local symlink'
+	else
+		fail 'link replaces registry copy with local symlink'
+	fi
+
+	# Relinking an already-correct edge is a no-op.
+	if "$META_LINK" "$LINK_MAP" link 2>/dev/null | grep -q 'already .*pkg-consumer -> @test/dep'; then
+		pass 'link is idempotent'
+	else
+		fail 'link is idempotent'
+	fi
+
+	# package.json and lockfiles are never rewritten.
+	if grep -q '"@test/dep":"0.9.0"' "$LINK_META/repos/pkg-consumer/package.json"; then
+		pass 'link leaves consumer package.json untouched'
+	else
+		fail 'link leaves consumer package.json untouched'
+	fi
+
+	# Unlink removes only the symlink.
+	"$META_LINK" "$LINK_MAP" unlink >/dev/null 2>&1
+	if [ ! -e "$DEP_LINK" ] && [ ! -L "$DEP_LINK" ]; then
+		pass 'unlink removes the symlink'
+	else
+		fail 'unlink removes the symlink'
+	fi
+
+	# Unlink must never delete a real installed package.
+	mkdir -p "$DEP_LINK"
+	printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' > "$DEP_LINK/package.json"
+	"$META_LINK" "$LINK_MAP" unlink >/dev/null 2>&1
+	if [ -d "$DEP_LINK" ] && [ ! -L "$DEP_LINK" ] && [ -f "$DEP_LINK/package.json" ]; then
+		pass 'unlink preserves a real installed package'
+	else
+		fail 'unlink preserves a real installed package'
+	fi
+
+	# Linking refuses a consumer that has never been installed.
+	rm -rf "$LINK_META/repos/pkg-consumer/node_modules"
+	assert_fail 'link refuses consumer without node_modules' "$META_LINK" "$LINK_MAP" link
+
+	# Argument validation.
+	assert_fail 'link rejects unknown subcommand' "$META_LINK" "$LINK_MAP" bogus
+	assert_fail 'link rejects unknown option' "$META_LINK" "$LINK_MAP" status --wat
+	assert_fail 'link rejects traversal in --only' "$META_LINK" "$LINK_MAP" status --only '../etc'
+	assert_fail 'link rejects invalid spec name' "$META_LINK" "$LINK_MAP" status --spec 'BAD/../x'
+	assert_fail 'link rejects missing spec worktrees' "$META_LINK" "$LINK_MAP" status --spec nosuchspec
+else
+	printf 'NOTE: node unavailable; link-local-packages helper tests skipped\n'
 fi
 
 # Live validation harness availability (reported; not equivalent to passing tests above)

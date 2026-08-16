@@ -1,0 +1,4 @@
+interface:
+  display_name: "Link Local Packages"
+  short_description: "Test cross-repo package changes without publishing"
+  default_prompt: "Use $link-local-packages to link local package checkouts into the repositories that depend on them."
