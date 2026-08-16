@@ -106,6 +106,8 @@ Makes a change in one repository testable in the repositories that consume it wi
 
 Writes only inside `node_modules/`; never edits `package.json`, a lockfile, or Git state. Supports `status`, `link`, and `unlink`, scoped to `repos/` by default or to `specs/<spec-name>/repos/` with `--spec`.
 
+Preflight-first, consistent with the other workflows: every edge is validated before any change is applied, so a failure on one consumer cannot leave another half-linked. Only symlinks pointing at the expected local checkout are removed—one owned by something else is reported as `foreign` and left alone. Destinations resolve against the physical `node_modules` directory, so a symlinked scope directory cannot redirect a write outside it.
+
 Contexts must not be mixed: linking a feature worktree to a reference clone silently tests the wrong branch. Because `npm install` and `npm ci` remove links, re-run `link` after either.
 
 ## repos.txt format

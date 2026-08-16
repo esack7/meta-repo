@@ -28,6 +28,16 @@ Linking replaces the published copy inside the consumer's `node_modules` with a 
 - `npm install` and `npm ci` in a consumer silently remove links. Re-run `link` after either.
 - Linking bypasses the package's `files` array and `exports` map, so it cannot catch packaging bugs. Verify with a real tarball before publishing (see below).
 
+## Safety model
+
+The helper follows the same preflight-first contract as the other workflows in this repo:
+
+- **Every edge is validated before any change is applied.** If one consumer fails preflight, nothing is linked anywhere — a later failure cannot leave earlier consumers half-linked.
+- **Only symlinks pointing at the expected local checkout are removed.** A symlink owned by something else (pnpm, a manual link) is reported as `foreign` and left in place; `unlink` skips it and `link` refuses to clobber it.
+- **Destinations are anchored to the physical `node_modules` directory.** A scope directory that is itself a symlink resolving outside `node_modules` is refused, so a write cannot be redirected out of the tree.
+
+When preflight fails, the helper reports every problem and exits without touching the filesystem. Resolve the reported condition and rerun; do not work around it by deleting paths by hand unless the message asks you to.
+
 ## Steps
 
 1. Check current state:
@@ -38,7 +48,16 @@ sh .claude/skills/link-local-packages/scripts/link-local-packages.sh project-rep
 
 Add `--spec <spec-name>` to operate on `specs/<spec-name>/repos/` instead of `repos/`. Add `--only <repository-name>` (repeatable) to narrow scope.
 
-Each line reports one dependency edge as `linked`, `registry` (published copy installed), `dangling`, or `absent`.
+Each line reports one dependency edge:
+
+| State | Meaning |
+|-------|---------|
+| `linked` | Symlinked to the expected local checkout |
+| `dangling` | Linked, but the local checkout is missing |
+| `foreign` | A symlink to something else; not managed by this helper |
+| `registry` | The published copy is installed |
+| `absent` | Nothing installed at that path |
+| `unsafe` | The scope directory is a symlink resolving outside `node_modules` |
 
 2. Build the dependency so the consumer has something to resolve:
 
@@ -68,7 +87,7 @@ The consumer's dev command, build, and tests all resolve through the symlink, so
 sh .claude/skills/link-local-packages/scripts/link-local-packages.sh project-repositories.yaml unlink
 ```
 
-`unlink` removes only symlinks; it never deletes a real installed package. Because the published copy was replaced when linking, run `npm ci` in each consumer afterward to reinstall it.
+`unlink` removes only the symlinks this helper would have created; it never deletes a real installed package or a `foreign` symlink. Because the published copy was replaced when linking, run `npm ci` in each consumer afterward to reinstall it.
 
 ## Before publishing
 

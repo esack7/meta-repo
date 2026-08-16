@@ -891,6 +891,86 @@ if command -v node >/dev/null 2>&1; then
 		fail 'unlink preserves a real installed package'
 	fi
 
+	# A symlink owned by something else (pnpm, a manual link) must never be
+	# reported as ours, replaced, or deleted.
+	FOREIGN="$LINK_META/foreign-pkg"
+	mkdir -p "$FOREIGN"
+	printf '%s\n' '{"name":"@test/dep","version":"7.7.7"}' > "$FOREIGN/package.json"
+	FOREIGN_REAL=$(cd "$FOREIGN" && pwd -P)
+	rm -rf "$DEP_LINK"
+	ln -s "$FOREIGN_REAL" "$DEP_LINK"
+
+	if "$META_LINK" "$LINK_MAP" status 2>/dev/null | grep -q 'foreign .*pkg-consumer -> @test/dep'; then
+		pass 'status reports a wrong-target symlink as foreign'
+	else
+		fail 'status reports a wrong-target symlink as foreign'
+	fi
+
+	"$META_LINK" "$LINK_MAP" unlink >/dev/null 2>&1
+	if [ -L "$DEP_LINK" ] && [ "$(readlink "$DEP_LINK")" = "$FOREIGN_REAL" ]; then
+		pass 'unlink preserves a wrong-target symlink'
+	else
+		fail 'unlink preserves a wrong-target symlink'
+	fi
+
+	assert_fail 'link refuses to clobber a wrong-target symlink' "$META_LINK" "$LINK_MAP" link
+	if [ -L "$DEP_LINK" ] && [ "$(readlink "$DEP_LINK")" = "$FOREIGN_REAL" ]; then
+		pass 'refused link leaves the wrong-target symlink intact'
+	else
+		fail 'refused link leaves the wrong-target symlink intact'
+	fi
+	rm -f "$DEP_LINK"
+
+	# A symlinked scope directory must not redirect writes outside node_modules.
+	ESCAPE="$LINK_META/escape-target"
+	mkdir -p "$ESCAPE"
+	ESCAPE_REAL=$(cd "$ESCAPE" && pwd -P)
+	rm -rf "$LINK_META/repos/pkg-consumer/node_modules/@test"
+	ln -s "$ESCAPE_REAL" "$LINK_META/repos/pkg-consumer/node_modules/@test"
+	assert_fail 'link refuses a scope directory symlinked outside node_modules' \
+		"$META_LINK" "$LINK_MAP" link
+	if [ -z "$(ls -A "$ESCAPE_REAL")" ]; then
+		pass 'refused link writes nothing outside node_modules'
+	else
+		fail 'refused link writes nothing outside node_modules'
+	fi
+	rm -f "$LINK_META/repos/pkg-consumer/node_modules/@test"
+	mkdir -p "$LINK_META/repos/pkg-consumer/node_modules/@test"
+
+	# Preflight is atomic: a failure on one consumer must not leave an earlier
+	# consumer already linked.
+	printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' > "$DEP_LINK/package.json" 2>/dev/null || \
+		{ mkdir -p "$DEP_LINK"; printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' > "$DEP_LINK/package.json"; }
+	mkdir -p "$LINK_META/repos/pkg-second"
+	printf '%s\n' '{"name":"@test/second","version":"1.0.0","dependencies":{"@test/dep":"0.9.0"}}' \
+		> "$LINK_META/repos/pkg-second/package.json"
+	write_map "$LINK_MAP" \
+		"version: 1" \
+		"repositories:" \
+		"  - name: pkg-dep" \
+		"    description: Dependency package" \
+		"    git:" \
+		"      clone_url: $ORIGIN_A" \
+		"      default_branch: main" \
+		"  - name: pkg-consumer" \
+		"    description: Consumer package" \
+		"    git:" \
+		"      clone_url: $ORIGIN_B" \
+		"      default_branch: main" \
+		"  - name: pkg-second" \
+		"    description: Second consumer, never installed" \
+		"    git:" \
+		"      clone_url: $ORIGIN_B" \
+		"      default_branch: main"
+
+	assert_fail 'link refuses when any consumer lacks node_modules' "$META_LINK" "$LINK_MAP" link
+	if [ -d "$DEP_LINK" ] && [ ! -L "$DEP_LINK" ]; then
+		pass 'failed preflight leaves earlier consumers unlinked'
+	else
+		fail 'failed preflight leaves earlier consumers unlinked'
+	fi
+	rm -rf "$LINK_META/repos/pkg-second"
+
 	# Linking refuses a consumer that has never been installed.
 	rm -rf "$LINK_META/repos/pkg-consumer/node_modules"
 	assert_fail 'link refuses consumer without node_modules' "$META_LINK" "$LINK_MAP" link
