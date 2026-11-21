@@ -1,0 +1,74 @@
+name: Package integration
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: Existing specification name
+        required: true
+      producer:
+        description: Producer repository name from project map
+        required: true
+      consumer:
+        description: Consumer repository name from project map
+        required: true
+      producer_commit:
+        description: Full producer commit SHA available on origin
+        required: true
+      consumer_commit:
+        description: Full consumer commit SHA available on origin
+        required: true
+      mode:
+        type: choice
+        options: [candidate, published]
+        default: candidate
+        description: Package source to validate
+      producer_build_script:
+        description: Producer npm build script
+        default: build
+        required: true
+      checks:
+        description: Consumer npm scripts, separated by spaces
+        default: build test
+        required: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate selected repositories and commits
+        env:
+          SPEC: ${{ inputs.spec }}
+          PRODUCER: ${{ inputs.producer }}
+          CONSUMER: ${{ inputs.consumer }}
+          PRODUCER_COMMIT: ${{ inputs.producer_commit }}
+          CONSUMER_COMMIT: ${{ inputs.consumer_commit }}
+          MODE: ${{ inputs.mode }}
+          BUILD_SCRIPT: ${{ inputs.producer_build_script }}
+          CHECKS: ${{ inputs.checks }}
+        run: |
+          sh .claude/skills/setup-repositories/scripts/setup-repositories.sh project-repositories.yaml "$PRODUCER" "$CONSUMER"
+          set -f
+          set --
+          for check in $CHECKS; do
+            set -- "$@" --check "$check"
+          done
+          python3 .claude/skills/verify-packages/scripts/verify-packages.py \
+            project-repositories.yaml "$SPEC" "$PRODUCER" "$CONSUMER" \
+            --producer-commit "$PRODUCER_COMMIT" --consumer-commit "$CONSUMER_COMMIT" \
+            --mode "$MODE" --producer-build-script "$BUILD_SCRIPT" "$@" --report package-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-report-${{ inputs.mode }}
+          path: package-report.json
+          if-no-files-found: warn

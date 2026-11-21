@@ -136,6 +136,17 @@ Preflight-first, consistent with the other workflows: every edge is validated be
 
 Contexts must not be mixed: linking a feature worktree to a reference clone silently tests the wrong branch. Because `npm install` and `npm ci` remove links, re-run `link` after either.
 
+## Optional npm package verification
+
+Use `$verify-packages`, `/verify-packages`, or `/skill verify-packages` when asked
+to test a packed npm package against its consumer. Node.js and npm are required.
+The helper verifies exact producer and consumer commits in temporary copies and
+records a JSON report. Both repositories must be selected by a spec; delivery
+tracking can remain disabled. Select the producer build script with
+`--producer-build-script` and consumer scripts with repeated `--check` arguments.
+See [package verification](docs/DELIVERY.md#package-integration-without-publication).
+A manual GitHub Actions workflow exposes the same checks.
+
 ## repos.txt format
 
 - One repository `name` per line (must exist in `project-repositories.yaml`).

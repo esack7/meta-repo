@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Packages"
+  short_description: "Test package artifacts across repository boundaries"
+  default_prompt: "Use $verify-packages to validate candidate and published package compatibility."

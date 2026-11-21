@@ -152,3 +152,38 @@ is ready. Repeat when new changes or failures justify it. Record results at thei
 commit and dependency versions; do not reuse evidence after those inputs change.
 CI checks and test counts supplement acceptance evidence rather than replacing it.
 
+## Package integration without publication
+
+```sh
+python3 .claude/skills/verify-packages/scripts/verify-packages.py \
+  project-repositories.yaml example producer-repo consumer-repo \
+  --producer-commit <full-sha> --consumer-commit <full-sha> \
+  --check build --check test --report /tmp/candidate-check.json
+```
+
+Package verification is available through explicit invocation or the manual CI
+workflow. It works with specs that use Markdown tasks and requires no delivery
+record. Node.js and npm are required only for this workflow.
+
+Both repositories must be selected by the spec and available as reference clones;
+commits must be present locally. Use setup/refresh to obtain remote commits first.
+The helper archives the exact commits into temporary directories, installs the
+producer's locked dependencies, runs its build, and packs its output with pack
+lifecycle scripts disabled. It updates the temporary consumer lockfile to select
+the candidate tarball before installing dependencies. Consumer install and setup
+scripts therefore run against the candidate. It then runs the chosen consumer
+checks. It never publishes or changes the
+original worktrees, manifests, lockfiles, or links. Tracked symlinks/submodules are
+refused. npm and package lifecycle scripts execute normally: use trusted code and
+a suitable runner, without deployment credentials. Lockfiles and a producer
+`build` script are required by default. Use `--producer-build-script compile` to
+select another producer script and repeat `--check <script>` for the consumer
+checks.
+
+Run again with `--mode published` and a new report path to check the consumer's
+locked registry dependency independently (v2/v3 npm lockfile with a resolved URL and integrity). Candidate success does not establish
+published-package compatibility or authorize release. Reports include exact
+commits, runtime versions, candidate tarball hash, installed version, checks, and
+pass/fail results. The temporary copies are removed on exit. The workflow in
+`.github/workflows/package-integration.yml` exposes the same two modes for manual
+CI runs. Its inputs select the producer build script and consumer checks; private repositories require separately provisioned read access.
