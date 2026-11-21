@@ -175,3 +175,8 @@ run_extract_project_map() {
 	[ -x "$extract" ] || die "missing extract helper: $extract"
 	"$extract" "$map_path" "$@"
 }
+
+# Include invalid filesystem entries so delivery validation can reject them.
+has_delivery_record() {
+	[ -e "$1/delivery.json" ] || [ -L "$1/delivery.json" ]
+}

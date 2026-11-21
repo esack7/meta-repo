@@ -5,7 +5,7 @@ description: Start the next planned PR slice of a prepared specification, preser
 
 # start-slice
 
-Read `specs/<spec>/delivery.json` and [delivery guidance](../../../../docs/DELIVERY.md).
+Read `specs/<spec>/delivery.json` and [delivery guidance](../../../docs/DELIVERY.md).
 Select the next authorized slice whose dependencies are merged. Run:
 `sh .claude/skills/start-slice/scripts/start-slice.sh project-repositories.yaml <spec> <slice>`.
 Use `--branch-prefix <namespace>` to customize the default `codex/` namespace.

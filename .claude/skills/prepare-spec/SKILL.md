@@ -43,4 +43,4 @@ Add `--reuse-branches` only after explicit user authorization to reuse retained 
 
 See [AGENTS.md](../../../AGENTS.md) for branch and reopen guidance.
 
-Delivery-aware specs use the latest registered branch per repository when reopening. Existing registered slice worktrees are valid idempotent targets. See [delivery guidance](../../../../docs/DELIVERY.md).
+Delivery-aware specs use the latest registered branch per repository when reopening. Existing registered slice worktrees are valid idempotent targets. See [delivery guidance](../../../docs/DELIVERY.md).

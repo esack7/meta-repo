@@ -10,6 +10,6 @@ Use `--remote` for current GitHub PR comparisons and `--json` for structured out
 The command is read-only and does not fetch. Report unknown remote state honestly.
 Enable delivery tracking only when requested, using the explicit `init` command
 before recording slices.
-Read [delivery guidance](../../../../docs/DELIVERY.md) for the schema, working agreement,
+Read [delivery guidance](../../../docs/DELIVERY.md) for the schema, working agreement,
 and evidence requirements. Reconcile the record after each review and merge;
 do not infer whole-spec completion from a single merged PR.

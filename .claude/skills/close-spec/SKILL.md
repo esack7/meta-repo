@@ -35,6 +35,6 @@ Optional flags (only with explicit user authorization):
 - `--worktrees-only` — explicitly requested cleanup before acceptance is complete; does not change delivery status or bypass other safety checks
 - `--offline` — use last-known remote refs; no branch removal; reports stale reachability
 
-5. Report worktree cleanup separately from implementation completion. All original and registered slice branches remain. Delivery-aware normal close requires verified acceptance and current merge evidence; offline early cleanup needs `--worktrees-only`. Legacy specs do not certify acceptance. See [delivery guidance](../../../../docs/DELIVERY.md).
+5. Report worktree cleanup separately from implementation completion. All original and registered slice branches remain. Delivery-aware normal close requires verified acceptance and current merge evidence; offline early cleanup needs `--worktrees-only`. Legacy specs do not certify acceptance. See [delivery guidance](../../../docs/DELIVERY.md).
 
 See [AGENTS.md](../../../AGENTS.md) for manual branch cleanup guidance.

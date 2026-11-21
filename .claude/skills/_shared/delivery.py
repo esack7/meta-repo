@@ -280,6 +280,7 @@ def parser():
     p.add_argument("spec")
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("init")
+    sub.add_parser("check-amend")
     status = sub.add_parser("status")
     status.add_argument(
         "--remote",
@@ -322,6 +323,10 @@ def execute(args):
         print(f"initialized {d.path}; plan criteria and slices before implementation")
         return
     data = d.load()
+    if args.command == "check-amend":
+        if data["slices"]:
+            raise ValueError("cannot amend repository selection after slices are recorded")
+        return
     if args.command == "active-branch":
         if args.repo not in d.repos:
             raise ValueError("repository not selected")

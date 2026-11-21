@@ -83,7 +83,7 @@ Use real full commit hashes and concrete checks. Validation checks that the comm
 matches the current retained slice branch head (later commits require renewed evidence). It cannot prove the assertion or that the test
 was run: reviewers must assess the linked test and result. PR numbers are resolved
 only against the selected repository. Retain slice branches while their evidence
-is in use. Invalid records fail closed; a populated slice plan prevents changing
+is in use. Invalid records, including dangling links and directories at `delivery.json`, fail closed; a populated slice plan prevents changing
 `repos.txt` through amendment.
 
 ## Status and slices

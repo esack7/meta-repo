@@ -42,7 +42,7 @@ NAMES=$("$PARSE" "$REPOS_TXT" --validate-map "$MAP")
 [ -n "$NAMES" ] || die "repos.txt has no repository entries"
 
 spec_branch() {
-	if [ -f "$SPEC_DIR/delivery.json" ]; then
+	if has_delivery_record "$SPEC_DIR"; then
 		python3 "$SHARED/delivery.py" "$MAP" "$SPEC" active-branch "$1"
 	else
 		printf 'feature/%s\n' "$SPEC"
@@ -119,7 +119,7 @@ for name in $NAMES; do
 
 	if [ -d "$worktree_path" ] && [ "$existing" = "yes" ]; then
 		wt_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null) || wt_branch=""
-		if [ "$wt_branch" = "$BRANCH" ] || { [ -f "$SPEC_DIR/delivery.json" ] &&
+		if [ "$wt_branch" = "$BRANCH" ] || { has_delivery_record "$SPEC_DIR" &&
 			python3 "$SHARED/delivery.py" "$MAP" "$SPEC" branch "$name" "$wt_branch"; }; then
 			if [ -n "$(git -C "$worktree_path" status --porcelain 2>/dev/null)" ]; then
 				printf '%s\n' 'skip-dirty' > "$PLAN_DIR/$name.action"

@@ -179,6 +179,45 @@ class WorkflowTests(WorkflowFixture):
         self.helper("close-spec", "plain")
         self.assertFalse((plain / "repos/a").exists())
 
+    def test_invalid_delivery_entries_block_lifecycle_helpers(self):
+        original = self.state_path.read_bytes()
+        for entry in ("dangling", "directory", "invalid-json", "invalid-schema"):
+            with self.subTest(entry=entry):
+                self.state_path.unlink()
+                if entry == "dangling":
+                    self.state_path.symlink_to(self.base / "missing.json")
+                elif entry == "directory":
+                    self.state_path.mkdir()
+                elif entry == "invalid-json":
+                    self.state_path.write_text("{")
+                else:
+                    self.state_path.write_text('{"slices": []}')
+                self.helper("prepare-spec", "example", ok=False)
+                self.helper("close-spec", "example", ok=False)
+                self.helper("close-spec", "example", "--worktrees-only", ok=False)
+                self.assertTrue(self.wt().exists())
+                self.assertTrue(self.wt("b").exists())
+                if self.state_path.is_dir():
+                    self.state_path.rmdir()
+                    self.state_path.write_bytes(original)
+                else:
+                    self.state_path.unlink()
+                    self.state_path.write_bytes(original)
+
+    def test_invalid_delivery_blocks_preparation_amendment(self):
+        self.helper("create-spec", "unprepared", "a")
+        directory = self.root / "specs/unprepared"
+        record = directory / "delivery.json"
+        selection = (directory / "repos.txt").read_bytes()
+        for value in ('{"slices": []}', '{'):
+            record.write_text(value)
+            self.helper("create-spec", "unprepared", "--amend", "b", ok=False)
+            self.assertEqual((directory / "repos.txt").read_bytes(), selection)
+        record.unlink()
+        record.symlink_to(self.base / "missing.json")
+        self.helper("create-spec", "unprepared", "--amend", "b", ok=False)
+        self.assertEqual((directory / "repos.txt").read_bytes(), selection)
+
     def test_status_read_only_and_incomplete_close(self):
         before = self.state_path.read_bytes()
         result = json.loads(self.engine("status", "--json"))

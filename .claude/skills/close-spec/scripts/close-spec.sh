@@ -86,7 +86,7 @@ for name in $NAMES; do
 
 	wt_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null) || wt_branch=""
 	if [ "$wt_branch" != "$BRANCH" ]; then
-		[ -f "$SPEC_DIR/delivery.json" ] || die "worktree for $name is on $wt_branch, expected $BRANCH"
+		has_delivery_record "$SPEC_DIR" || die "worktree for $name is on $wt_branch, expected $BRANCH"
 		python3 "$SHARED/delivery.py" "$MAP" "$SPEC" branch "$name" "$wt_branch" || \
 			die "worktree branch is not registered for $name"
 	fi
@@ -94,7 +94,7 @@ for name in $NAMES; do
 	unpushed=$(unpushed_feature_commits "$worktree_path" "$default_branch" "$wt_branch")
 	# A squash merge can remove the remote branch without retaining its ancestry.
 	# Accept only current merged-PR evidence for the exact retained branch head.
-	if [ "$unpushed" -gt 0 ] && [ "$OFFLINE" -eq 0 ] && [ -f "$SPEC_DIR/delivery.json" ]; then
+	if [ "$unpushed" -gt 0 ] && [ "$OFFLINE" -eq 0 ] && has_delivery_record "$SPEC_DIR"; then
 		if python3 "$SHARED/delivery.py" "$MAP" "$SPEC" merged-branch "$name" "$wt_branch"; then
 			unpushed=0
 		fi
@@ -108,7 +108,7 @@ for name in $NAMES; do
 done
 
 # Delivery completion is separate from explicit early worktree cleanup.
-if [ -f "$SPEC_DIR/delivery.json" ]; then
+if has_delivery_record "$SPEC_DIR"; then
 	set -- "$MAP" "$SPEC" check-close
 	[ "$OFFLINE" -eq 0 ] || set -- "$@" --offline
 	[ "$WORKTREES_ONLY" -eq 0 ] || set -- "$@" --worktrees-only
