@@ -169,6 +169,12 @@ checks at specific commits. `start-slice` starts each planned PR branch. These
 workflows require Python 3.9+ and use GitHub CLI for PR queries and squash-merge
 verification. See [delivery workflows](docs/DELIVERY.md) for setup and commands.
 
+When requested, `verify-packages` tests an actual npm tarball against a consumer at
+specific commits. It runs independently of delivery tracking and requires Node.js,
+npm, and lockfiles. Choose producer and consumer scripts for your project, and
+run it locally or through the manual Package integration workflow. See
+[package verification](docs/DELIVERY.md#package-integration-without-publication).
+
 ### 4. Close the specification
 
 After the work is safely committed:
@@ -231,7 +237,9 @@ For branch reuse, offline close behavior, troubleshooting, and the full operatin
 
 ## Verify the scaffold
 
-Run the local integration suite after changing the project-map format, skills, or workflow helpers:
+The integration suite requires Python 3.9+ for delivery regression fixtures. When
+Node.js and npm are available, it also tests local package links and packed package
+fixtures. Run it after changing the project-map format, skills, or workflow helpers:
 
 ```sh
 tests/run-tests.sh
