@@ -41,7 +41,13 @@ PARSE="$SHARED/parse-repos-txt.sh"
 NAMES=$("$PARSE" "$REPOS_TXT" --validate-map "$MAP")
 [ -n "$NAMES" ] || die "repos.txt has no repository entries"
 
-BRANCH="feature/$SPEC"
+spec_branch() {
+	if [ -f "$SPEC_DIR/delivery.json" ]; then
+		python3 "$SHARED/delivery.py" "$MAP" "$SPEC" active-branch "$1"
+	else
+		printf 'feature/%s\n' "$SPEC"
+	fi
+}
 mkdir -p "$WORKTREES_DIR"
 
 PLAN_DIR=$(mktemp -d "$SPEC_DIR/.prepare-spec-plan-XXXXXX") || \
@@ -65,6 +71,7 @@ rollback_prepare() {
 		fi
 		case $applied_action in
 		create | reuse-remote)
+			BRANCH=$(spec_branch "$applied_name")
 			planned_base=$(cat "$PLAN_DIR/$applied_name.base")
 			current_head=$(git -C "$applied_ref" rev-parse "refs/heads/$BRANCH" 2>/dev/null || true)
 			if [ "$removed" -eq 1 ] && [ -n "$current_head" ] && [ "$current_head" = "$planned_base" ]; then
@@ -91,6 +98,7 @@ trap 'exit 1' INT HUP TERM
 
 # Phase 1: fetch and validate every repository before creating any worktree or branch.
 for name in $NAMES; do
+	BRANCH=$(spec_branch "$name")
 	record=$(run_extract_project_map "$SCRIPT" "$MAP" --get "$name")
 	clone_url=$(printf '%s' "$record" | cut -f2)
 	default_branch=$(printf '%s' "$record" | cut -f3)
@@ -111,7 +119,8 @@ for name in $NAMES; do
 
 	if [ -d "$worktree_path" ] && [ "$existing" = "yes" ]; then
 		wt_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null) || wt_branch=""
-		if [ "$wt_branch" = "$BRANCH" ]; then
+		if [ "$wt_branch" = "$BRANCH" ] || { [ -f "$SPEC_DIR/delivery.json" ] &&
+			python3 "$SHARED/delivery.py" "$MAP" "$SPEC" branch "$name" "$wt_branch"; }; then
 			if [ -n "$(git -C "$worktree_path" status --porcelain 2>/dev/null)" ]; then
 				printf '%s\n' 'skip-dirty' > "$PLAN_DIR/$name.action"
 			else
@@ -150,6 +159,9 @@ for name in $NAMES; do
 		fi
 	fi
 
+	if [ "$BRANCH" != "feature/$SPEC" ] && [ "$action" = "create" ]; then
+		die "registered branch $BRANCH is missing for $name; refusing to recreate its history"
+	fi
 	printf '%s\n' "$action" > "$PLAN_DIR/$name.action"
 	case $action in
 	create) git -C "$ref_clone" rev-parse "$upstream" > "$PLAN_DIR/$name.base" ;;
@@ -160,6 +172,7 @@ done
 # Phase 2: apply the complete plan. The exit trap rolls back new worktrees on failure.
 APPLY_ACTIVE=1
 for name in $NAMES; do
+	BRANCH=$(spec_branch "$name")
 	action=$(cat "$PLAN_DIR/$name.action")
 	case $action in
 	skip)

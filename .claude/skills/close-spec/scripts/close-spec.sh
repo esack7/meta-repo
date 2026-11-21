@@ -1,7 +1,7 @@
 #!/bin/sh
 # Remove feature worktrees for a specification (never deletes branches or spec docs).
 #
-# Usage: close-spec.sh <project-map.yaml> <spec-name> [--offline] [--acknowledge-unpushed]
+# Usage: close-spec.sh <project-map.yaml> <spec-name> [--offline] [--acknowledge-unpushed] [--worktrees-only]
 #
 # Two-phase safety: preflight across all repositories, then removal only if all pass.
 
@@ -15,18 +15,20 @@ MAP=$1
 SPEC=$2
 OFFLINE=0
 ACK_UNPUSHED=0
+WORKTREES_ONLY=0
 shift 2 || true
 
 for arg in "$@"; do
 	case $arg in
 	--offline) OFFLINE=1 ;;
 	--acknowledge-unpushed) ACK_UNPUSHED=1 ;;
+	--worktrees-only) WORKTREES_ONLY=1 ;;
 	*) die "unknown argument: $arg" ;;
 	esac
 done
 
 [ -n "$MAP" ] && [ -n "$SPEC" ] || \
-	die "usage: close-spec.sh <project-map.yaml> <spec-name> [--offline] [--acknowledge-unpushed]"
+	die "usage: close-spec.sh <project-map.yaml> <spec-name> [--offline] [--acknowledge-unpushed] [--worktrees-only]"
 
 require_git_version
 validate_spec_name "$SPEC"
@@ -83,16 +85,37 @@ for name in $NAMES; do
 	require_clean_worktree "$worktree_path" "specs/$SPEC/repos/$name"
 
 	wt_branch=$(git -C "$worktree_path" rev-parse --abbrev-ref HEAD 2>/dev/null) || wt_branch=""
-	[ "$wt_branch" = "$BRANCH" ] || die "worktree for $name is on $wt_branch, expected $BRANCH"
+	if [ "$wt_branch" != "$BRANCH" ]; then
+		[ -f "$SPEC_DIR/delivery.json" ] || die "worktree for $name is on $wt_branch, expected $BRANCH"
+		python3 "$SHARED/delivery.py" "$MAP" "$SPEC" branch "$name" "$wt_branch" || \
+			die "worktree branch is not registered for $name"
+	fi
 
-	unpushed=$(unpushed_feature_commits "$worktree_path" "$default_branch" "$BRANCH")
+	unpushed=$(unpushed_feature_commits "$worktree_path" "$default_branch" "$wt_branch")
+	# A squash merge can remove the remote branch without retaining its ancestry.
+	# Accept only current merged-PR evidence for the exact retained branch head.
+	if [ "$unpushed" -gt 0 ] && [ "$OFFLINE" -eq 0 ] && [ -f "$SPEC_DIR/delivery.json" ]; then
+		if python3 "$SHARED/delivery.py" "$MAP" "$SPEC" merged-branch "$name" "$wt_branch"; then
+			unpushed=0
+		fi
+	fi
 	if [ "$unpushed" -gt 0 ] && [ "$ACK_UNPUSHED" -eq 0 ]; then
-		die "specs/$SPEC/repos/$name has unpushed commits on $BRANCH; use --acknowledge-unpushed to close anyway (branch is retained)"
+		die "specs/$SPEC/repos/$name has unpushed commits on $wt_branch; use --acknowledge-unpushed to close anyway (branch is retained)"
 	fi
 	if [ "$OFFLINE" -eq 1 ]; then
 		STALE_NOTE=1
 	fi
 done
+
+# Delivery completion is separate from explicit early worktree cleanup.
+if [ -f "$SPEC_DIR/delivery.json" ]; then
+	set -- "$MAP" "$SPEC" check-close
+	[ "$OFFLINE" -eq 0 ] || set -- "$@" --offline
+	[ "$WORKTREES_ONLY" -eq 0 ] || set -- "$@" --worktrees-only
+	python3 "$SHARED/delivery.py" "$@" || die "delivery is incomplete; no worktrees removed"
+else
+	printf 'note: delivery tracking is disabled; cleanup does not certify acceptance\n'
+fi
 
 if [ "$STALE_NOTE" -eq 1 ]; then
 	printf 'note: remote reachability is stale (offline close); branches and commits retained\n'
@@ -128,4 +151,4 @@ if [ -n "$ORPHANED" ]; then
 	die "close-spec incomplete: unregistered worktree directories remain:$ORPHANED"
 fi
 
-printf 'close-spec complete for %s (branches and specification documents retained)\n' "$SPEC"
+printf 'worktree cleanup complete for %s (branches and specification documents retained; not a declaration of implementation completion)\n' "$SPEC"

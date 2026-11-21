@@ -163,6 +163,12 @@ Pass `--spec <spec-name>` to link the feature worktrees rather than the referenc
 
 Commit and publish changes in each source repository using your normal Git and review process.
 
+For specifications delivered through several PRs, optionally enable delivery tracking
+with `spec-status ... init`. It records acceptance criteria, PR dependencies, and
+checks at specific commits. `start-slice` starts each planned PR branch. These
+workflows require Python 3.9+ and use GitHub CLI for PR queries and squash-merge
+verification. See [delivery workflows](docs/DELIVERY.md) for setup and commands.
+
 ### 4. Close the specification
 
 After the work is safely committed:

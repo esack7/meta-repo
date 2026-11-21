@@ -16,3 +16,10 @@
 ## Verification
 
 - [ ] 
+
+## Optional delivery tracking
+
+When delivery tracking is requested, initialize `delivery.json` with `spec-status`
+and use it for PR status, dependencies, and evidence at specific commits. Keep
+implementation details and check descriptions here. See
+[delivery guidance](../../docs/DELIVERY.md).

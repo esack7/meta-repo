@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Status"
+  short_description: "Inspect delivery progress and acceptance gaps"
+  default_prompt: "Use $spec-status to inspect progress and the next action for a spec."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start Slice"
+  short_description: "Start a planned slice on its own PR branch"
+  default_prompt: "Use $start-slice to start the next authorized slice of a prepared spec."
