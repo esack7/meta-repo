@@ -114,7 +114,6 @@ def main():
                 "passed": False,
             }
             try:
-                run("npm", "ci", "--no-audit", "--no-fund", cwd=consumer)
                 if args.mode == "candidate":
                     run("npm", "ci", "--no-audit", "--no-fund", cwd=producer)
                     run("npm", "run", "--", args.producer_build_script, cwd=producer)
@@ -127,13 +126,19 @@ def main():
                     result["artifact_sha256"] = hashlib.sha256(
                         tarball.read_bytes()
                     ).hexdigest()
+                    # Validate the original lock without running setup against the baseline.
+                    run(
+                        "npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund",
+                        cwd=consumer,
+                    )
                     run(
                         "npm",
                         "install",
-                        "--no-save",
+                        "--package-lock-only",
+                        "--ignore-scripts",
+                        "--save-exact",
                         "--no-audit",
                         "--no-fund",
-                        "--package-lock=false",
                         str(tarball),
                         cwd=consumer,
                     )
@@ -154,6 +159,7 @@ def main():
                         raise ValueError(
                             "published mode requires a registry dependency with URL and integrity in a v2/v3 lockfile"
                         )
+                run("npm", "ci", "--no-audit", "--no-fund", cwd=consumer)
                 installed = consumer / "node_modules" / name / "package.json"
                 installed_package = json.loads(installed.read_text())
                 result["installed_version"] = installed_package["version"]

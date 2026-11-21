@@ -61,12 +61,17 @@ class PackageTests(delivery_tests.WorkflowFixture):
                     "version": "1.0.0",
                     "dependencies": {"fixture-producer": "file:" + str(tarball)},
                     "scripts": {
+                        "prepare": "node prepare.js",
                         "test": "node test.js",
                         "fail": 'node -e "process.exit(1)"',
                         "baseline": "node -e \"require('assert').strictEqual(require('fixture-producer'), 7)\"",
                     },
                 }
             )
+        )
+        self.env["EXPECTED_VALUE"] = "42"
+        (consumer / "prepare.js").write_text(
+            "require('assert').strictEqual(require('fixture-producer'), Number(process.env.EXPECTED_VALUE));"
         )
         (consumer / "test.js").write_text(
             "require('assert').strictEqual(require('fixture-producer'), 42);"
@@ -103,6 +108,8 @@ class PackageTests(delivery_tests.WorkflowFixture):
         for repo, name in [(producer, "a"), (consumer, "b")]:
             self.git(repo, "add", "package.json", "package-lock.json")
             self.git(repo, "add", "build.js" if name == "a" else "test.js")
+            if name == "b":
+                self.git(repo, "add", "prepare.js")
             self.git(repo, "commit", "-m", "npm fixture")
             self.git(repo, "push", "origin", "main")
             self.git(self.ref(name), "fetch", "origin")
@@ -136,6 +143,7 @@ class PackageTests(delivery_tests.WorkflowFixture):
         args[-1] = self.base / "failed.json"
         self.call(*args, "--check", "fail", ok=False)
         self.assertFalse(json.loads(args[-1].read_text())["passed"])
+        self.env["EXPECTED_VALUE"] = "7"
         args[-1] = self.base / "published.json"
         self.call(
             *args, "--mode", "published", ok=False

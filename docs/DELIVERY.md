@@ -167,9 +167,12 @@ record. Node.js and npm are required only for this workflow.
 
 Both repositories must be selected by the spec and available as reference clones;
 commits must be present locally. Use setup/refresh to obtain remote commits first.
-The helper archives the exact commits into temporary directories, installs locked
-dependencies, runs the producer build and packs its output with pack lifecycle scripts disabled, installs the actual tarball into the
-consumer, and runs the chosen package scripts. It never publishes or changes the
+The helper archives the exact commits into temporary directories, installs the
+producer's locked dependencies, runs its build, and packs its output with pack
+lifecycle scripts disabled. It updates the temporary consumer lockfile to select
+the candidate tarball before installing dependencies. Consumer install and setup
+scripts therefore run against the candidate. It then runs the chosen consumer
+checks. It never publishes or changes the
 original worktrees, manifests, lockfiles, or links. Tracked symlinks/submodules are
 refused. npm and package lifecycle scripts execute normally: use trusted code and
 a suitable runner, without deployment credentials. Lockfiles and a producer

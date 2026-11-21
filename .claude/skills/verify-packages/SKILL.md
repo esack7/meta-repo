@@ -5,7 +5,7 @@ description: Test a packed local package against a consumer at exact commits, or
 
 # verify-packages
 
-Use [delivery guidance](../../../../docs/DELIVERY.md#package-integration-without-publication)
+Use [delivery guidance](../../../docs/DELIVERY.md#package-integration-without-publication)
 for prerequisites and interpretation. Run:
 `python3 .claude/skills/verify-packages/scripts/verify-packages.py project-repositories.yaml <spec> <producer> <consumer> --producer-commit <sha> --consumer-commit <sha> --check build --check test --report <new-report.json>`.
 Run only when package-artifact verification is requested. Delivery tracking is optional.
