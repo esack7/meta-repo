@@ -74,7 +74,33 @@ Invoke workflows through your agent's native skill syntax or natural language.
 
 Canonical skills live under `.claude/skills/<skill-name>/`. Codex discovers thin compatibility wrappers under `.agents/skills/<skill-name>/`; those wrappers point back to the canonical skill and contain no helper copies. Propio discovers the canonical definitions through `.propio/skills/<skill-name>` symlinks. Cursor discovers `link-local-packages` through `.cursor/commands/<skill-name>.md` (as `/link-local-packages`) and `.cursor/rules/<skill-name>.mdc`; both are wrappers pointing back to the canonical skill.
 
-**Safety rule:** Bundled helpers own reference-clone setup/refresh, spec directory and `repos.txt` creation/amendment, feature-worktree creation/removal, and local package links. Do not reproduce or bypass those helpers. Ordinary source/document edits, tests, commits, pushes, and PR preparation within the authorized scope use normal tools. Work on the meta-repo itself may use a separate branch or isolated checkout without creating a cross-repository spec. Merging, publishing, and external messages follow the user’s authorization.
+**Safety rule:** Bundled helpers own reference-clone setup/refresh, spec directory and `repos.txt` creation/amendment, feature-worktree creation/removal, slice branch switching/registration, and local package links. Do not reproduce or bypass those helpers. Ordinary source/document edits, tests, commits, pushes, and PR preparation within the authorized scope use normal tools. Work on the meta-repo itself may use a separate branch or isolated checkout without creating a cross-repository spec. Merging, publishing, and external messages follow the user’s authorization.
+
+## Optional delivery tracking
+
+Specs use Markdown tasks by default. Enable delivery tracking for a selected spec
+with `spec-status ... init`, then plan acceptance criteria and PR slices in its
+tracked `delivery.json`. See [docs/DELIVERY.md](docs/DELIVERY.md) for the record,
+commands, evidence requirements, and closeout behavior. Python 3.9+ is required
+for these opt-in workflows. GitHub CLI is needed when querying PRs or verifying
+squash merges.
+
+| Workflow | Codex | Claude Code | Propio |
+|---|---|---|---|
+| Inspect delivery state | `$spec-status` | `/spec-status` | `/skill spec-status` |
+| Start a PR slice | `$start-slice` | `/start-slice` | `/skill start-slice` |
+
+Use `spec-status` when resuming tracked work and `--remote` when current PR state
+matters. Use `start-slice` to create each planned branch. The default branch name
+is `codex/<spec>-<slice>` and `--branch-prefix` selects another namespace. Helpers
+accept registered slice branches during preparation and reopening. Retain those
+branches while their evidence is in use.
+
+Normal close of a tracked spec requires verified criteria and current merge
+evidence. Explicit `--worktrees-only` permits cleanup before completion. Specs
+without `delivery.json` retain the original worktree cleanup behavior. Record the
+user's existing authorization and continue approved work through review fixes and
+handoffs. Reconcile the record after merges and report remaining acceptance gaps.
 
 ### setup-repositories
 
@@ -94,7 +120,7 @@ Gathers requirements, proposes affected repositories from the project map, obtai
 
 ### prepare-spec
 
-Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches and prunes `origin`, and verifies every `origin/<default_branch>` before creating anything. It then creates `feature/<spec-name>` worktrees under `specs/<spec-name>/repos/`, rolling back newly created clean worktrees and unchanged branches if a later creation fails. It skips an already-correct worktree on the expected feature branch without requiring it to be clean. A worktree on another branch is refused, as are pre-existing feature branches unless you explicitly authorize reuse.
+Validates `repos.txt`, requires reference clones under `repos/<name>/`, fetches and prunes `origin`, and verifies every `origin/<default_branch>` before creating anything. It then creates `feature/<spec-name>` worktrees under `specs/<spec-name>/repos/`, rolling back newly created clean worktrees and unchanged branches if a later creation fails. It skips an already-correct worktree on the expected feature branch without requiring it to be clean. Registered slice branches are also accepted for delivery-tracked specs. Other branches are refused, as are pre-existing feature branches unless you explicitly authorize reuse.
 
 ### close-spec
 
@@ -141,7 +167,7 @@ Multiple specs may be active concurrently; paths and branch names provide isolat
 
 ### Reopening a closed spec
 
-Run `prepare-spec <spec-name>` on the existing spec directory and explicitly authorize reuse of retained `feature/<spec-name>` branches.
+Run `prepare-spec <spec-name>` on the existing spec directory and explicitly authorize reuse of retained branches. Delivery-tracked specs reopen the active slice or most recently started registered branch. Other specs reopen `feature/<spec-name>`.
 
 ### Manual branch cleanup
 

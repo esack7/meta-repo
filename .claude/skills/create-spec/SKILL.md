@@ -48,6 +48,12 @@ The helper atomically replaces only `repos.txt`. It refuses amendments if featur
 - Blank lines and `#` comments allowed.
 - No duplicate or unknown names.
 
+## Optional delivery tracking
+
+Specs use the Markdown task checklist by default. When delivery tracking is requested,
+initialize it with `spec-status ... init` after creation and plan the delivery record.
+See [delivery guidance](../../../docs/DELIVERY.md).
+
 ## Next steps
 
 Tell the user to run **setup-repositories** (if clones are missing) then **prepare-spec** `<spec-name>` to create feature worktrees.

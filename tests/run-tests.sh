@@ -84,7 +84,7 @@ for script in "$EXTRACT" "$PARSE" "$SETUP" "$REFRESH" "$PREPARE" "$CLOSE" "$CREA
 done
 
 # Skill metadata checks
-for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages; do
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages spec-status start-slice; do
 	skill_file="$ROOT/.claude/skills/$skill/SKILL.md"
 	if [ -f "$skill_file" ] && grep -q '^name: '"$skill" "$skill_file" && grep -q '^description:' "$skill_file"; then
 		pass "skill metadata: $skill"
@@ -103,7 +103,7 @@ done
 
 # Codex compatibility wrappers (real directories are used because Codex discovery
 # does not reliably follow project-local skill symlinks).
-for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages; do
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages spec-status start-slice; do
 	wrapper="$ROOT/.agents/skills/$skill"
 	canonical="../../../.claude/skills/$skill/SKILL.md"
 	if [ -d "$wrapper" ] && [ ! -L "$wrapper" ] && [ -f "$wrapper/SKILL.md" ] && \
@@ -116,7 +116,7 @@ for skill in setup-repositories refresh-repositories create-spec prepare-spec cl
 done
 
 # Propio symlinks
-for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages; do
+for skill in setup-repositories refresh-repositories create-spec prepare-spec close-spec link-local-packages spec-status start-slice; do
 	link="$ROOT/.propio/skills/$skill"
 	if [ -L "$link" ] && [ -f "$link/SKILL.md" ]; then
 		pass "propio symlink: $skill"
@@ -1017,6 +1017,12 @@ if command -v propio >/dev/null 2>&1; then
 	printf 'NOTE: Propio native skill discovery smoke tests not run in the automated suite (see docs/VERIFICATION.md)\n'
 else
 	printf 'NOTE: Propio CLI unavailable; native discovery unverified\n'
+fi
+
+if python3 "$ROOT/tests/test-delivery.py"; then
+	pass 'delivery integration tests'
+else
+	fail 'delivery integration tests'
 fi
 
 printf '\nTests complete: %s passed, %s failed\n' "$PASS" "$FAIL"

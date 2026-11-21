@@ -5,3 +5,7 @@
 /specs/.create-spec-tmp-*
 /specs/*/.prepare-spec-plan-*
 /specs/*/.repos-txt-*
+
+/specs/*/.delivery.lock/
+/specs/*/.delivery-*
+__pycache__/

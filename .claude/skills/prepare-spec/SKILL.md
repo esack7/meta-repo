@@ -42,3 +42,5 @@ Add `--reuse-branches` only after explicit user authorization to reuse retained 
 - Skips an already-correct worktree on the expected feature branch even when it contains in-progress changes. A worktree on another branch is refused rather than skipped; other branch collisions require `--reuse-branches`.
 
 See [AGENTS.md](../../../AGENTS.md) for branch and reopen guidance.
+
+Delivery-aware specs use the latest registered branch per repository when reopening. Existing registered slice worktrees are valid idempotent targets. See [delivery guidance](../../../docs/DELIVERY.md).
