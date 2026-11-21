@@ -51,3 +51,21 @@ When validating in a fresh environment:
 8. Open the meta-repo in Cursor and confirm `/link-local-packages` is offered as a command, and that the matching rule is available for agent-requested selection.
 
 If any harness above is unavailable, treat that discovery path as unverified rather than equivalent to passing `tests/run-tests.sh`.
+
+## Acceptance evidence
+
+For each requirement, record the concrete check, the commit tested, and any limits
+of the result. Update the evidence after changes to the tested inputs. An acceptance
+review can use a small table like this example.
+
+| Criterion | Result | Evidence | Limits |
+|---|---|---|---|
+| Interrupted operations preserve completed results | Verified | Commit `<full SHA>`, `tests/recovery.test.ts`, interrupted-operation fixture passed | Deterministic local fixture |
+| Export opens in the supported desktop application | Pending | Manual check required | Automated file validation alone leaves this criterion pending |
+
+Choose checks that exercise the requirement through its normal entry point. Include
+relevant failure and recovery scenarios. Record remaining gaps explicitly before
+requesting review or declaring a specification complete.
+
+The GitHub Actions workflow runs the integration suite on Linux and macOS. Its
+fixtures set their own Git identity and branch names for repeatable execution.
