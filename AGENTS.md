@@ -74,7 +74,7 @@ Invoke workflows through your agent's native skill syntax or natural language.
 
 Canonical skills live under `.claude/skills/<skill-name>/`. Codex discovers thin compatibility wrappers under `.agents/skills/<skill-name>/`; those wrappers point back to the canonical skill and contain no helper copies. Propio discovers the canonical definitions through `.propio/skills/<skill-name>` symlinks. Cursor discovers `link-local-packages` through `.cursor/commands/<skill-name>.md` (as `/link-local-packages`) and `.cursor/rules/<skill-name>.mdc`; both are wrappers pointing back to the canonical skill.
 
-**Safety rule:** Git and filesystem mutations run only through bundled skill helpers. Agents select inputs and explain results; they do not reproduce or bypass helper logic.
+**Safety rule:** Bundled helpers own reference-clone setup/refresh, spec directory and `repos.txt` creation/amendment, feature-worktree creation/removal, and local package links. Do not reproduce or bypass those helpers. Ordinary source/document edits, tests, commits, pushes, and PR preparation within the authorized scope use normal tools. Work on the meta-repo itself may use a separate branch or isolated checkout without creating a cross-repository spec. Merging, publishing, and external messages follow the user’s authorization.
 
 ### setup-repositories
 

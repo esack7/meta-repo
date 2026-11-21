@@ -2,6 +2,16 @@
 # Integration tests for meta-repo skill helpers.
 set -e
 
+# Fixtures must not depend on the developer's Git identity or default branch.
+GIT_AUTHOR_NAME='Meta Repo Tests'
+GIT_AUTHOR_EMAIL='tests@example.invalid'
+GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME
+GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL
+GIT_CONFIG_GLOBAL=/dev/null
+GIT_CONFIG_NOSYSTEM=1
+export GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+export GIT_CONFIG_GLOBAL GIT_CONFIG_NOSYSTEM
+
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 EXTRACT="$ROOT/.claude/skills/_shared/extract-project-map.sh"
 PARSE="$ROOT/.claude/skills/_shared/parse-repos-txt.sh"
@@ -178,6 +188,8 @@ seed_repo() {
 
 seed_repo "$ORIGIN_A" repo-a
 seed_repo "$ORIGIN_B" repo-b
+git -C "$ORIGIN_A" symbolic-ref HEAD refs/heads/main
+git -C "$ORIGIN_B" symbolic-ref HEAD refs/heads/main
 
 META="$WORKDIR/meta"
 mkdir -p "$META/.claude/skills"
@@ -939,8 +951,8 @@ if command -v node >/dev/null 2>&1; then
 
 	# Preflight is atomic: a failure on one consumer must not leave an earlier
 	# consumer already linked.
-	printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' > "$DEP_LINK/package.json" 2>/dev/null || \
-		{ mkdir -p "$DEP_LINK"; printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' > "$DEP_LINK/package.json"; }
+	mkdir -p "$DEP_LINK"
+	printf '%s\n' '{"name":"@test/dep","version":"0.9.0"}' > "$DEP_LINK/package.json"
 	mkdir -p "$LINK_META/repos/pkg-second"
 	printf '%s\n' '{"name":"@test/second","version":"1.0.0","dependencies":{"@test/dep":"0.9.0"}}' \
 		> "$LINK_META/repos/pkg-second/package.json"
